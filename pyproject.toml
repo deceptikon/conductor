@@ -1,0 +1,17 @@
+[project]
+name = "conductor"
+version = "0.1.0"
+description = "Model-agnostic agent orchestration harness (Hermes conducts headless coding CLIs via a LangGraph Plan->Approve->Act->QA->Commit pipeline)."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "fastmcp>=3.4.2",
+    "langgraph>=1.2.5",
+    "langgraph-checkpoint-sqlite>=3.1.0",
+]
+
+[project.scripts]
+conductor = "conductor.__main__:main"
+
+[tool.uv]
+package = true

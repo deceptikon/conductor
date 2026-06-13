@@ -1,0 +1,26 @@
+# ADLAI — project #1 for the conductor harness.
+# AI-native Saudi legal assistant (bilingual AR/EN hybrid-RAG).
+
+[project]
+name = "adlai"
+repo = "~/Documents/ADLAI"
+vault = "~/Documents/ADLAI/adlai-vault"
+agents_md = "~/Documents/ADLAI/CLAUDE.md"
+qa_cmd = "uv run pytest backend/tests/unit -q"
+commit_template = "{type}: {subject}"
+max_qa_retries = 2
+
+# Routing table: which headless CLI owns each pipeline node.
+# Omit a node to fall back to conductor.workers.DEFAULT_ROUTING.
+[routing.plan]
+worker = "gemini"
+read_only = true          # --approval-mode plan: planner cannot write
+
+[routing.act]
+worker = "claude"         # careful implementer, structured stream-json output
+
+[routing.bulk]
+worker = "qwen"           # high-volume mechanical edits
+
+[routing.review]
+worker = "claude"

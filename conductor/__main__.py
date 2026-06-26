@@ -118,6 +118,9 @@ def _render(state: dict) -> str:
 def cmd_run(args):
     run_id = args.run_id or uuid.uuid4().hex[:12]
     _setup_logging(args.verbose, run_id=run_id)
+    if args.extra_context and args.no_context:
+        logger.warning("[run] both --extra-context and --no-context set, defaulting to story-only")
+    rvc_mode = "off" if args.no_context else ("full" if args.extra_context else "get")
     # --bg: fire-and-forget via subprocess, return run_id immediately
     if args.bg:
         log_path = LOG_DIR / f"{run_id}.log"
@@ -130,8 +133,10 @@ def cmd_run(args):
         ]
         if args.issue:
             cmd += ["--issue", args.issue]
-        if args.rvc_mode != "full":
-            cmd += ["--rvc-mode", args.rvc_mode]
+        if args.extra_context:
+            cmd += ["--extra-context"]
+        if args.no_context:
+            cmd += ["--no-context"]
         with open(log_path, "w") as fp:
             subprocess.Popen(cmd, stdout=fp, stderr=subprocess.STDOUT)
         print(f"run_id: {run_id}")
@@ -152,11 +157,11 @@ def cmd_run(args):
         "task": args.task,
         "task_type": args.type,
         "issue_id": args.issue or "",
-        "rvc_mode": args.rvc_mode,
+        "rvc_mode": rvc_mode,
         "qa_attempts": 0,
         "history": [],
     }
-    logger.info("[run] starting run_id=%s project=%s", run_id, cfg.name)
+    logger.info("[run] starting run_id=%s project=%s rvc_mode=%s", run_id, cfg.name, rvc_mode)
     logger.debug("[run] initial state: task=%s type=%s issue=%s",
                   args.task, args.type, args.issue or "(none)")
     result = graph.invoke(init, cfg_ctx)
@@ -334,8 +339,10 @@ def main(argv=None):
     r.add_argument("project"); r.add_argument("task")
     r.add_argument("--type", default="feat", help="conventional-commit type")
     r.add_argument("--issue", default="", help="RVC/vault issue id")
-    r.add_argument("--rvc-mode", default="full", choices=["full", "get", "off"],
-                   help="RVC context mode: full (issue+links), get (issue only), off (skip)")
+    r.add_argument("--extra-context", action="store_true",
+                   help="include full vault context (issue + all linked docs)")
+    r.add_argument("--no-context", action="store_true",
+                   help="skip RVC vault context entirely")
     r.add_argument("--run-id", default="")
     r.add_argument("--bg", action="store_true", help="fire-and-forget: return run_id immediately, detach")
     r.set_defaults(fn=cmd_run)

@@ -153,10 +153,14 @@ def cmd_run(args):
         "history": [],
     }
     logger.info("[run] starting run_id=%s project=%s", run_id, cfg.name)
+    logger.debug("[run] initial state: task=%s type=%s issue=%s",
+                  args.task, args.type, args.issue or "(none)")
     result = graph.invoke(init, cfg_ctx)
     state = graph.get_state(cfg_ctx)
     snap = dict(state.values)
     _write_ledger(run_id, snap)
+    final_status = snap.get("status", "?")
+    logger.info("[run] completed run_id=%s status=%s", run_id, final_status)
     print(f"\nrun_id: {run_id}")
     # if interrupted at approval, result carries __interrupt__
     if "__interrupt__" in result:
@@ -180,10 +184,13 @@ def _resume(run_id: str, payload: dict):
     saver = _saver()
     graph = build_graph(cfg).compile(checkpointer=saver)
     logger.info("[resume] run_id=%s payload_keys=%s", run_id, list(payload.keys()))
+    logger.debug("[resume] payload=%s", json.dumps(payload, default=str)[:1000])
     result = graph.invoke(Command(resume=payload), cfg_ctx)
     state = graph.get_state(cfg_ctx)
     snap = dict(state.values)
     _write_ledger(run_id, snap)
+    final_status = snap.get("status", "?")
+    logger.info("[resume] completed run_id=%s status=%s", run_id, final_status)
     print(f"run_id: {run_id}")
     if "__interrupt__" in result:
         print(">>> PAUSED again at approval gate (replan).")
@@ -237,7 +244,8 @@ def cmd_list(args):
     for p in runs:
         try:
             snap = json.loads(p.read_text())
-        except Exception:
+        except Exception as e:
+            logger.debug("[list] skipping corrupted ledger %s: %s", p.name, e)
             continue
         rid = p.stem[:12]
         status = snap.get("status", "?")[:19]
@@ -273,6 +281,7 @@ def cmd_logs(args):
                 try:
                     new_mtime = ledger.stat().st_mtime
                 except FileNotFoundError:
+                    logger.debug("[logs] ledger vanished, stopping follow")
                     break
                 if new_mtime > last_mtime:
                     last_mtime = new_mtime

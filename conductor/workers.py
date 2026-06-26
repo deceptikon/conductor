@@ -14,11 +14,14 @@ Supported workers (verified headless modes):
 from __future__ import annotations
 
 import json
+import logging
 import re
 import shlex
 import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
+
+logger = logging.getLogger("conductor.workers")
 
 
 def _strip_ansi(text: str) -> str:
@@ -113,6 +116,13 @@ class Worker:
             env: dict | None = None) -> WorkerResult:
         cmd = self._build_cmd(prompt)
         cmd_str = " ".join(shlex.quote(c) for c in cmd)
+        logger.info("[worker:%s] running (timeout=%d, prompt_len=%d, cwd=%s)",
+                     self.name, timeout, len(prompt), cwd)
+        logger.debug("[worker:%s] command: %s", self.name, cmd_str[:2000])
+        logger.debug("[worker:%s] prompt preview (first 500 chars):\n%s",
+                     self.name, prompt[:500])
+        logger.debug("[worker:%s] prompt preview (last 500 chars):\n%s",
+                     self.name, prompt[-500:])
         try:
             proc = subprocess.run(
                 cmd, cwd=str(cwd), capture_output=True, text=True,
@@ -122,16 +132,31 @@ class Worker:
             partial = e.stdout
             if isinstance(partial, bytes):
                 partial = partial.decode("utf-8", "replace")
+            logger.warning("[worker:%s] TIMEOUT after %ds (partial stdout=%d chars)",
+                           self.name, timeout, len(partial or ""))
             return WorkerResult(self.name, False, "", partial or "", -1,
                                 cmd_str, error=f"timeout after {timeout}s")
         except FileNotFoundError:
+            logger.error("[worker:%s] binary not found on PATH", self.name)
             return WorkerResult(self.name, False, "", "", -127, cmd_str,
                                 error=f"worker binary not found: {self.name}")
         text = self._extract_text(proc.stdout)
         ok = proc.returncode == 0
+        stderr = proc.stderr.strip()
+        if stderr:
+            logger.debug("[worker:%s] stderr (%d chars):\n%s",
+                         self.name, len(stderr), stderr[-2000:])
+        logger.info("[worker:%s] done: returncode=%d ok=%s stdout_len=%d text_len=%d stderr_len=%d",
+                     self.name, proc.returncode, ok, len(proc.stdout or ""), len(text), len(stderr))
+        if not ok:
+            error_msg = stderr[-10000:] or "nonzero exit"
+            logger.warning("[worker:%s] FAILED (%d chars stderr):\n%s",
+                           self.name, len(stderr), error_msg)
+        else:
+            error_msg = ""
         return WorkerResult(
             self.name, ok, text, proc.stdout, proc.returncode, cmd_str,
-            error="" if ok else (proc.stderr.strip()[-2000:] or "nonzero exit"),
+            error=error_msg,
         )
 
     # ------------------------------------------------------------------ #

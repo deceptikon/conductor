@@ -68,8 +68,8 @@ def _git_context(repo: Path) -> str:
             cwd=str(repo), capture_output=True, text=True, check=False,
         ).stdout.strip()
         ctx.append(f"Branch: {branch}")
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning("[git_context] failed to get branch: %s", e)
     try:
         log = subprocess.run(
             ["git", "log", "--oneline", "-10"],
@@ -77,8 +77,8 @@ def _git_context(repo: Path) -> str:
         ).stdout.strip()
         if log:
             ctx.append(f"Recent commits:\n{log}")
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning("[git_context] failed to get git log: %s", e)
     try:
         status = subprocess.run(
             ["git", "status", "--short"],
@@ -86,8 +86,8 @@ def _git_context(repo: Path) -> str:
         ).stdout.strip()
         if status:
             ctx.append(f"Uncommitted changes:\n{status}")
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning("[git_context] failed to get git status: %s", e)
     return "\n".join(ctx)
 
 
@@ -117,7 +117,8 @@ def _rvc_context(issue_id: str, repo: Path) -> str:
             logger.info("[rvc] fetched context for %s (%d chars)", issue_id, len(proc.stdout))
             return f"# RVC ISSUE CONTEXT ({issue_id})\n{proc.stdout.strip()}\n"
         else:
-            logger.warning("[rvc] context fetch failed for %s: %s", issue_id, proc.stderr.strip()[:200])
+            logger.warning("[rvc] context fetch failed for %s (exit=%d, stderr %d chars):\n%s",
+                           issue_id, proc.returncode, len(proc.stderr), proc.stderr.strip()[-1000:])
     except Exception as e:
         logger.warning("[rvc] exception fetching context for %s: %s", issue_id, e)
     return ""
@@ -174,6 +175,7 @@ def build_graph(cfg: ProjectConfig):
     """Compile the pipeline for a given project config."""
 
     def plan_node(state: RunState) -> RunState:
+        logger.info("[plan] entering (status=%s qa_attempts=%s)", state.get("status"), state.get("qa_attempts", 0))
         logger.info("[plan] starting plan generation")
         contract = _read_contract(cfg)
         worker = cfg.worker_for("plan")
@@ -207,8 +209,15 @@ def build_graph(cfg: ProjectConfig):
             "- Every node must have non-empty expected_output and test_case.\n"
             "- Do NOT write code or modify files — planning only.\n"
         )
-        logger.debug("[plan] prompt length=%d", len(prompt))
+        logger.info("[plan] worker=%s model=%s timeout=600 prompt_len=%d",
+                     worker.name, worker.model, len(prompt))
+        logger.debug("[plan] prompt preview (first 600 chars):\n%s", prompt[:600])
+        logger.debug("[plan] prompt preview (last 600 chars):\n%s", prompt[-600:])
         res = worker.run(prompt, cwd=cfg.repo, timeout=600)
+        logger.info("[plan] worker result: ok=%s returncode=%s len=%d error=%s",
+                     res.ok, res.returncode, len(res.text), res.error or "none")
+        if not res.ok:
+            logger.warning("[plan] worker returned error:\n%s", res.error)
         plan: Plan | None = None
         parse_ok = False
         try:
@@ -239,7 +248,7 @@ def build_graph(cfg: ProjectConfig):
         }
 
     def reviewer_node(state: RunState) -> RunState:
-        logger.info("[review] validating plan")
+        logger.info("[review] entering (status=%s)", state.get("status"))
         plan = state.get("plan")
         if plan is None:
             logger.warning("[review] reject: planner output was not valid JSON")
@@ -250,7 +259,7 @@ def build_graph(cfg: ProjectConfig):
             }
         errors = plan.validate()
         if errors:
-            logger.warning("[review] reject: %d validation errors", len(errors))
+            logger.warning("[review] reject: %d validation errors:\n%s", len(errors), "\n".join(f"  - {e}" for e in errors))
             return {
                 "status": "planning",
                 "rejection_note": "Plan validation failed:\n" + "\n".join(f"- {e}" for e in errors),
@@ -270,6 +279,12 @@ def build_graph(cfg: ProjectConfig):
 
     def approve_node(state: RunState) -> RunState:
         plan_json = _plan_to_json(state.get("plan"))
+        plan_obj = state.get("plan")
+        if plan_obj:
+            logger.info("[approve] entering: plan=%s v%d nodes=%d",
+                        plan_obj.id, plan_obj.version, len(plan_obj.nodes))
+        else:
+            logger.warning("[approve] entering: no plan present!")
         logger.info("[approve] waiting for human decision")
         decision = interrupt({
             "type": "approval_request",
@@ -325,6 +340,7 @@ def build_graph(cfg: ProjectConfig):
         retry = bool(qa_log) and not state.get("qa_passed", False)
         plan_json = _plan_to_json(state.get("plan"))
         issue_ctx = _rvc_context(state.get("issue_id", ""), cfg.repo)
+        logger.info("[act] entering (status=%s qa_attempts=%s)", state.get("status"), state.get("qa_attempts", 0))
         logger.info("[act] starting implementation (retry=%s)", retry)
         prompt = (
             f"{state['contract']}\n\n"
@@ -336,8 +352,15 @@ def build_graph(cfg: ProjectConfig):
             + "Implement the locked plan now. Make the file changes. Keep changes "
               "minimal and aligned with the contract above."
         )
+        logger.info("[act] worker=%s model=%s timeout=1800 retry=%s prompt_len=%d",
+                     worker.name, worker.model, retry, len(prompt))
+        logger.debug("[act] prompt preview (first 600 chars):\n%s", prompt[:600])
+        logger.debug("[act] prompt preview (last 600 chars):\n%s", prompt[-600:])
         res = worker.run(prompt, cwd=cfg.repo, timeout=1800)
-        logger.info("[act] worker=%s ok=%s", res.worker, res.ok)
+        logger.info("[act] worker result: ok=%s returncode=%s len=%d error=%s",
+                     res.ok, res.returncode, len(res.text), res.error or "none")
+        if not res.ok:
+            logger.warning("[act] worker returned error:\n%s", res.error)
         return {
             "act_output": res.text,
             "status": "qa",
@@ -347,14 +370,20 @@ def build_graph(cfg: ProjectConfig):
 
     def qa_node(state: RunState) -> RunState:
         attempts = state.get("qa_attempts", 0) + 1
-        logger.info("[qa] attempt %d", attempts)
+        logger.info("[qa] entering (attempt=%d/%d cmd=%s)",
+                     attempts, cfg.max_qa_retries, cfg.qa_cmd)
+        logger.info("[qa] attempt %d: running %s", attempts, cfg.qa_cmd)
         proc = subprocess.run(
             cfg.qa_cmd, cwd=str(cfg.repo), shell=True,
             capture_output=True, text=True, timeout=1800,
         )
         passed = proc.returncode == 0
         log = (proc.stdout + "\n" + proc.stderr).strip()
-        logger.info("[qa] passed=%s returncode=%s", passed, proc.returncode)
+        logger.info("[qa] result: passed=%s returncode=%s stdout_len=%d stderr_len=%d",
+                     passed, proc.returncode, len(proc.stdout or ""), len(proc.stderr or ""))
+        if not passed:
+            logger.warning("[qa] FAILED (stdout+stderr %d chars):\n%s",
+                           len(log), log[-2000:])
         return {
             "qa_passed": passed,
             "qa_log": log,
@@ -369,6 +398,8 @@ def build_graph(cfg: ProjectConfig):
         worker = cfg.worker_for("plan")
         plan_json = _plan_to_json(state.get("plan"))
         qa_log = state.get("qa_log", "")
+        logger.info("[plan_reviser] entering (status=%s qa_attempts=%s)",
+                     state.get("status"), state.get("qa_attempts", 0))
         logger.info("[plan_reviser] diagnosing after %d failed QA attempts", state.get("qa_attempts", 0))
         prompt = (
             f"{state['contract']}\n\n"
@@ -383,7 +414,15 @@ def build_graph(cfg: ProjectConfig):
             "If the plan or contract is wrong, emit a revised Plan JSON. "
             "If the code is at fault, emit the same Plan JSON with a note."
         )
+        logger.info("[plan_reviser] worker=%s model=%s timeout=600 prompt_len=%d",
+                     worker.name, worker.model, len(prompt))
+        logger.debug("[plan_reviser] prompt preview (first 600 chars):\n%s", prompt[:600])
+        logger.debug("[plan_reviser] prompt preview (last 600 chars):\n%s", prompt[-600:])
         res = worker.run(prompt, cwd=cfg.repo, timeout=600)
+        logger.info("[plan_reviser] worker result: ok=%s returncode=%s len=%d error=%s",
+                     res.ok, res.returncode, len(res.text), res.error or "none")
+        if not res.ok:
+            logger.warning("[plan_reviser] worker returned error:\n%s", res.error)
         new_plan: Plan | None = None
         try:
             text = res.text.strip()
@@ -396,8 +435,8 @@ def build_graph(cfg: ProjectConfig):
                 text = "\n".join(lines).strip()
             data = json.loads(text)
             new_plan = _json_to_plan(data)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("[plan_reviser] failed to parse worker output: %s", e)
 
         if new_plan is not None and new_plan != state.get("plan"):
             logger.info("[plan_reviser] plan revised, new version")
@@ -424,8 +463,12 @@ def build_graph(cfg: ProjectConfig):
         msg = cfg.commit_template.format(type=ttype, subject=subject)
         if state.get("issue_id"):
             msg += f" ({state['issue_id']})"
-        logger.info("[commit] committing: %s", msg)
-        subprocess.run(["git", "add", "-A"], cwd=str(cfg.repo), check=False)
+        logger.info("[commit] entering (status=%s qa_passed=%s)", state.get("status"), state.get("qa_passed"))
+        logger.info("[commit] running: git add -A && git commit -m \"%s\"", msg)
+        add_proc = subprocess.run(["git", "add", "-A"], cwd=str(cfg.repo), check=False,
+                                   capture_output=True, text=True)
+        if add_proc.returncode != 0:
+            logger.warning("[commit] git add stderr (if any): %s", add_proc.stderr.strip()[-500:])
         proc = subprocess.run(
             ["git", "commit", "-m", msg], cwd=str(cfg.repo),
             capture_output=True, text=True,
@@ -437,8 +480,10 @@ def build_graph(cfg: ProjectConfig):
                 capture_output=True, text=True,
             ).stdout.strip()
             logger.info("[commit] sha=%s", sha)
+            logger.info("[commit] git commit stdout: %s", proc.stdout.strip())
         else:
-            logger.warning("[commit] failed: %s", proc.stderr.strip()[:200])
+            logger.warning("[commit] failed (exit=%d, stderr %d chars):\n%s",
+                           proc.returncode, len(proc.stderr), proc.stderr.strip()[-1000:])
         return {
             "commit_sha": sha,
             "status": "done",
@@ -449,28 +494,49 @@ def build_graph(cfg: ProjectConfig):
     # --- conditional edges ---
     def after_approve(state: RunState) -> Literal["act", "plan", "review", "end"]:
         st = state.get("status")
+        note = state.get("rejection_note", "")
+        logger.info("[route] after_approve: status=%s rejection_note=%s", st, repr(note[:200]) if note else "none")
         if st == "rejected":
-            return "plan" if state.get("rejection_note") else "end"
+            target = "plan" if note else "end"
+            logger.info("[route] after_approve -> %s (rejected%s)", target,
+                        " with note → re-plan" if note else " without note → end")
+            return target
         if st == "reviewing":
-            # human edited the plan — route back to reviewer
+            logger.info("[route] after_approve -> review (human edited plan)")
             return "review"
+        logger.info("[route] after_approve -> act (approved)")
         return "act"
 
     def after_qa(state: RunState) -> Literal["commit", "act", "plan_reviser", "end"]:
-        if state.get("qa_passed"):
+        passed = state.get("qa_passed")
+        attempts = state.get("qa_attempts", 0)
+        max_retries = cfg.max_qa_retries
+        logger.info("[route] after_qa: passed=%s attempts=%d/%d", passed, attempts, max_retries)
+        if passed:
+            logger.info("[route] after_qa -> commit (QA passed)")
             return "commit"
-        if state.get("qa_attempts", 0) >= cfg.max_qa_retries:
+        if attempts >= max_retries:
+            logger.warning("[route] after_qa -> plan_reviser (QA failed %d times, max=%d)", attempts, max_retries)
             return "plan_reviser"
+        logger.info("[route] after_qa -> act (QA failed, retry %d/%d)", attempts, max_retries)
         return "act"
 
     def after_reviewer(state: RunState) -> Literal["approve", "plan"]:
-        if state.get("plan_locked"):
+        locked = state.get("plan_locked")
+        logger.info("[route] after_reviewer: plan_locked=%s", locked)
+        if locked:
+            logger.info("[route] after_reviewer -> approve (plan locked)")
             return "approve"
+        logger.warning("[route] after_reviewer -> plan (plan invalid, re-planning)")
         return "plan"
 
     def after_plan_reviser(state: RunState) -> Literal["review", "end"]:
-        if state.get("status") == "reviewing":
+        st = state.get("status")
+        logger.info("[route] after_plan_reviser: status=%s", st)
+        if st == "reviewing":
+            logger.info("[route] after_plan_reviser -> review (plan was revised)")
             return "review"
+        logger.warning("[route] after_plan_reviser -> end (plan revision failed or unchanged)")
         return "end"
 
     g = StateGraph(RunState)

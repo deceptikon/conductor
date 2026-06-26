@@ -200,6 +200,9 @@ def build_graph(cfg: ProjectConfig):
         rej = state.get("rejection_note", "")
         git_ctx = _git_context(cfg.repo)
         issue_ctx = _rvc_context(state.get("issue_id", ""), cfg.repo)
+        logger.info("[plan] prompt breakdown: agents_md=%d rvc=%d git=%d task=%d rej=%d",
+                     len(contract), len(issue_ctx), len(git_ctx),
+                     len(state["task"]), len(rej))
         prompt = (
             f"{contract}\n\n"
             f"# REPOSITORY CONTEXT\n{git_ctx}\n\n"
@@ -360,6 +363,9 @@ def build_graph(cfg: ProjectConfig):
         retry = bool(qa_log) and not state.get("qa_passed", False)
         plan_json = _plan_to_json(state.get("plan"))
         issue_ctx = _rvc_context(state.get("issue_id", ""), cfg.repo)
+        logger.info("[act] prompt breakdown: contract=%d plan=%d rvc=%d task=%d qa_log=%d",
+                     len(state["contract"]), len(plan_json),
+                     len(issue_ctx), len(state["task"]), len(qa_log))
         logger.info("[act] entering (status=%s qa_attempts=%s)", state.get("status"), state.get("qa_attempts", 0))
         logger.info("[act] starting implementation (retry=%s)", retry)
         prompt = (

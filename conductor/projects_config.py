@@ -37,6 +37,7 @@ class ProjectConfig:
         for node, spec in (data.get("routing") or {}).items():
             routing[node] = Worker(
                 name=spec["worker"],
+                model=spec.get("model"),
                 extra_args=spec.get("extra_args", []),
                 read_only=spec.get("read_only", False),
             )
@@ -52,5 +53,30 @@ class ProjectConfig:
         )
 
     def worker_for(self, node: str) -> Worker:
-        from .workers import DEFAULT_ROUTING
-        return self.routing.get(node) or DEFAULT_ROUTING[node]
+        """Return the :class:`~conductor.workers.Worker` for a pipeline node.
+
+        The lookup order is:
+        1. Project‑specific routing defined in the TOML file (``self.routing``).
+        2. Dynamic temporary workers stored in the module‑level
+           ``WORKER_CONFIG`` dict (created via :func:`~conductor.workers.create_worker`).
+        3. The static ``DEFAULT_ROUTING`` fallback.
+        """
+        from .workers import DEFAULT_ROUTING, WORKER_CONFIG, create_worker
+
+        # 1. Project‑specific routing
+        if node in self.routing:
+            return self.routing[node]
+
+        # 2. Dynamic temporary workers – if a config entry exists we create a
+        #    Worker on‑the‑fly using the canonical factory.
+        if node in WORKER_CONFIG:
+            cfg = WORKER_CONFIG[node]
+            return create_worker(
+                agentic=cfg.get("agentic", cfg.get("binary", node)),
+                model=cfg.get("model"),
+                extra_args=cfg.get("extra_args", []),
+                read_only=cfg.get("read_only", False),
+            )
+
+        # 3. Fallback to the built‑in defaults
+        return DEFAULT_ROUTING[node]

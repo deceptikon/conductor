@@ -8,3 +8,6 @@ wheels/
 
 # Virtual environments
 .venv
+
+# Conductor runtime state (checkpoints, ledgers, logs)
+.conductor/

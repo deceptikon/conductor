@@ -12,15 +12,39 @@ max_qa_retries = 2
 
 # Routing table: which headless CLI owns each pipeline node.
 # Omit a node to fall back to conductor.workers.DEFAULT_ROUTING.
+#
+# Supported keys per entry:
+#   worker      = binary name on PATH (claude, gemini, qwen, opencode, …)
+#   model       = model identifier passed via the CLI's -m / --model flag
+#   extra_args  = list of additional CLI arguments
+#   read_only   = true enforces planning mode (gemini, qwen only)
+
 [routing.plan]
-worker = "gemini"
+worker = "qwen"
+model = "qwen/qwen3.7-plus"
 read_only = true          # --approval-mode plan: planner cannot write
 
 [routing.act]
-worker = "claude"         # careful implementer, structured stream-json output
+worker = "qwen"
+model = "qwen/qwen3.6-plus"
 
 [routing.bulk]
-worker = "qwen"           # high-volume mechanical edits
+worker = "qwen"
+model = "qwen/qwen3-coder-flash"
 
 [routing.review]
-worker = "claude"
+worker = "qwen"
+model = "qwen/qwen3.7-max"
+
+# --- alternate agentic examples (uncomment to try) ---
+# [routing.plan]
+# worker = "opencode"
+# model = "anthropic/claude-sonnet-4-20250514"
+#
+# [routing.act]
+# worker = "opencode"
+# model = "google/gemini-2.5-flash"
+#
+# [routing.review]
+# worker = "opencode"
+# model = "google/gemini-2.5-pro"

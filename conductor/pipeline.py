@@ -14,6 +14,7 @@ from __future__ import annotations
 import json
 import logging
 import subprocess
+import time
 from pathlib import Path
 from typing import Literal, TypedDict
 
@@ -373,17 +374,20 @@ def build_graph(cfg: ProjectConfig):
         logger.info("[qa] entering (attempt=%d/%d cmd=%s)",
                      attempts, cfg.max_qa_retries, cfg.qa_cmd)
         logger.info("[qa] attempt %d: running %s", attempts, cfg.qa_cmd)
+        t0 = time.monotonic()
+        logger.info("[qa] waiting for tests...")
         proc = subprocess.run(
             cfg.qa_cmd, cwd=str(cfg.repo), shell=True,
             capture_output=True, text=True, timeout=1800,
         )
+        elapsed = time.monotonic() - t0
         passed = proc.returncode == 0
         log = (proc.stdout + "\n" + proc.stderr).strip()
-        logger.info("[qa] result: passed=%s returncode=%s stdout_len=%d stderr_len=%d",
-                     passed, proc.returncode, len(proc.stdout or ""), len(proc.stderr or ""))
+        logger.info("[qa] done in %.1fs: passed=%s returncode=%s stdout_len=%d stderr_len=%d",
+                     elapsed, passed, proc.returncode, len(proc.stdout or ""), len(proc.stderr or ""))
         if not passed:
-            logger.warning("[qa] FAILED (stdout+stderr %d chars):\n%s",
-                           len(log), log[-2000:])
+            logger.warning("[qa] FAILED after %.1fs (stdout+stderr %d chars):\n%s",
+                           elapsed, len(log), log[-2000:])
         return {
             "qa_passed": passed,
             "qa_log": log,

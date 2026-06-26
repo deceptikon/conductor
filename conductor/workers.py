@@ -18,6 +18,7 @@ import logging
 import re
 import shlex
 import subprocess
+import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -116,6 +117,7 @@ class Worker:
             env: dict | None = None) -> WorkerResult:
         cmd = self._build_cmd(prompt)
         cmd_str = " ".join(shlex.quote(c) for c in cmd)
+        t0 = time.monotonic()
         logger.info("[worker:%s] running (timeout=%d, prompt_len=%d, cwd=%s)",
                      self.name, timeout, len(prompt), cwd)
         logger.debug("[worker:%s] command: %s", self.name, cmd_str[:2000])
@@ -123,35 +125,39 @@ class Worker:
                      self.name, prompt[:500])
         logger.debug("[worker:%s] prompt preview (last 500 chars):\n%s",
                      self.name, prompt[-500:])
+        logger.info("[worker:%s] waiting for output...", self.name)
         try:
             proc = subprocess.run(
                 cmd, cwd=str(cwd), capture_output=True, text=True,
                 timeout=timeout, env=env,
             )
         except subprocess.TimeoutExpired as e:
+            elapsed = time.monotonic() - t0
             partial = e.stdout
             if isinstance(partial, bytes):
                 partial = partial.decode("utf-8", "replace")
-            logger.warning("[worker:%s] TIMEOUT after %ds (partial stdout=%d chars)",
-                           self.name, timeout, len(partial or ""))
+            logger.warning("[worker:%s] TIMEOUT after %ds (%.1fs elapsed, partial stdout=%d chars)",
+                           self.name, timeout, elapsed, len(partial or ""))
             return WorkerResult(self.name, False, "", partial or "", -1,
                                 cmd_str, error=f"timeout after {timeout}s")
         except FileNotFoundError:
-            logger.error("[worker:%s] binary not found on PATH", self.name)
+            elapsed = time.monotonic() - t0
+            logger.error("[worker:%s] binary not found on PATH (%.1fs elapsed)", self.name, elapsed)
             return WorkerResult(self.name, False, "", "", -127, cmd_str,
                                 error=f"worker binary not found: {self.name}")
+        elapsed = time.monotonic() - t0
         text = self._extract_text(proc.stdout)
         ok = proc.returncode == 0
         stderr = proc.stderr.strip()
         if stderr:
             logger.debug("[worker:%s] stderr (%d chars):\n%s",
                          self.name, len(stderr), stderr[-2000:])
-        logger.info("[worker:%s] done: returncode=%d ok=%s stdout_len=%d text_len=%d stderr_len=%d",
-                     self.name, proc.returncode, ok, len(proc.stdout or ""), len(text), len(stderr))
+        logger.info("[worker:%s] done in %.1fs: returncode=%d ok=%s stdout_len=%d text_len=%d stderr_len=%d",
+                     self.name, elapsed, proc.returncode, ok, len(proc.stdout or ""), len(text), len(stderr))
         if not ok:
             error_msg = stderr[-10000:] or "nonzero exit"
-            logger.warning("[worker:%s] FAILED (%d chars stderr):\n%s",
-                           self.name, len(stderr), error_msg)
+            logger.warning("[worker:%s] FAILED after %.1fs (%d chars stderr):\n%s",
+                           self.name, elapsed, len(stderr), error_msg)
         else:
             error_msg = ""
         return WorkerResult(

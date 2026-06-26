@@ -70,7 +70,7 @@ def _git_context(repo: Path) -> str:
         ).stdout.strip()
         ctx.append(f"Branch: {branch}")
     except Exception as e:
-        logger.warning("[git_context] failed to get branch: %s", e)
+        logger.error("[git_context] failed to get branch: %s", e, exc_info=True)
     try:
         log = subprocess.run(
             ["git", "log", "--oneline", "-10"],
@@ -79,7 +79,7 @@ def _git_context(repo: Path) -> str:
         if log:
             ctx.append(f"Recent commits:\n{log}")
     except Exception as e:
-        logger.warning("[git_context] failed to get git log: %s", e)
+        logger.error("[git_context] failed to get git log: %s", e, exc_info=True)
     try:
         status = subprocess.run(
             ["git", "status", "--short"],
@@ -88,7 +88,7 @@ def _git_context(repo: Path) -> str:
         if status:
             ctx.append(f"Uncommitted changes:\n{status}")
     except Exception as e:
-        logger.warning("[git_context] failed to get git status: %s", e)
+        logger.error("[git_context] failed to get git status: %s", e, exc_info=True)
     return "\n".join(ctx)
 
 
@@ -121,7 +121,7 @@ def _rvc_context(issue_id: str, repo: Path) -> str:
             logger.warning("[rvc] context fetch failed for %s (exit=%d, stderr %d chars):\n%s",
                            issue_id, proc.returncode, len(proc.stderr), proc.stderr.strip()[-1000:])
     except Exception as e:
-        logger.warning("[rvc] exception fetching context for %s: %s", issue_id, e)
+        logger.error("[rvc] exception fetching context for %s: %s", issue_id, e, exc_info=True)
     return ""
 
 
@@ -218,7 +218,7 @@ def build_graph(cfg: ProjectConfig):
         logger.info("[plan] worker result: ok=%s returncode=%s len=%d error=%s",
                      res.ok, res.returncode, len(res.text), res.error or "none")
         if not res.ok:
-            logger.warning("[plan] worker returned error:\n%s", res.error)
+            logger.error("[plan] worker returned error:\n%s", res.error)
         plan: Plan | None = None
         parse_ok = False
         try:
@@ -236,10 +236,10 @@ def build_graph(cfg: ProjectConfig):
             parse_ok = True
             logger.info("[plan] parsed plan with %d nodes", len(plan.nodes))
         except Exception as e:
-            logger.warning("[plan] failed to parse planner output (%d chars): %s",
-                           len(res.text), e)
-            logger.warning("[plan] raw worker output (first 1000 chars):\n%s",
-                           res.text[:1000])
+            logger.error("[plan] failed to parse planner output (%d chars): %s",
+                         len(res.text), e, exc_info=True)
+            logger.error("[plan] raw worker output (first 1000 chars):\n%s",
+                         res.text[:1000])
 
         return {
             "contract": contract,
@@ -314,7 +314,7 @@ def build_graph(cfg: ProjectConfig):
                         "history": _log(state, "human_edit"),
                     }
                 except Exception as e:
-                    logger.warning("[approve] human edit was invalid: %s", e)
+                    logger.error("[approve] human edit was invalid: %s", e, exc_info=True)
                     # Edit was invalid JSON — treat as rejection with note
                     return {
                         "approved": False,
@@ -364,8 +364,8 @@ def build_graph(cfg: ProjectConfig):
         logger.info("[act] worker result: ok=%s returncode=%s len=%d error=%s",
                      res.ok, res.returncode, len(res.text), res.error or "none")
         if not res.ok:
-            logger.warning("[act] worker returned error:\n%s", res.error)
-            logger.warning("[act] raw worker output (first 1000 chars):\n%s", res.text[:1000])
+            logger.error("[act] worker returned error:\n%s", res.error)
+            logger.error("[act] raw worker output (first 1000 chars):\n%s", res.text[:1000])
         return {
             "act_output": res.text,
             "status": "qa",
@@ -390,8 +390,8 @@ def build_graph(cfg: ProjectConfig):
         logger.info("[qa] done in %.1fs: passed=%s returncode=%s stdout_len=%d stderr_len=%d",
                      elapsed, passed, proc.returncode, len(proc.stdout or ""), len(proc.stderr or ""))
         if not passed:
-            logger.warning("[qa] FAILED after %.1fs (stdout+stderr %d chars):\n%s",
-                           elapsed, len(log), log[-2000:])
+            logger.error("[qa] FAILED after %.1fs (stdout+stderr %d chars):\n%s",
+                         elapsed, len(log), log[-2000:])
         return {
             "qa_passed": passed,
             "qa_log": log,
@@ -430,7 +430,7 @@ def build_graph(cfg: ProjectConfig):
         logger.info("[plan_reviser] worker result: ok=%s returncode=%s len=%d error=%s",
                      res.ok, res.returncode, len(res.text), res.error or "none")
         if not res.ok:
-            logger.warning("[plan_reviser] worker returned error:\n%s", res.error)
+            logger.error("[plan_reviser] worker returned error:\n%s", res.error)
         new_plan: Plan | None = None
         try:
             text = res.text.strip()
@@ -444,10 +444,10 @@ def build_graph(cfg: ProjectConfig):
             data = json.loads(text)
             new_plan = _json_to_plan(data)
         except Exception as e:
-            logger.warning("[plan_reviser] failed to parse worker output (%d chars): %s",
-                           len(res.text), e)
-            logger.warning("[plan_reviser] raw worker output (first 1000 chars):\n%s",
-                           res.text[:1000])
+            logger.error("[plan_reviser] failed to parse worker output (%d chars): %s",
+                         len(res.text), e, exc_info=True)
+            logger.error("[plan_reviser] raw worker output (first 1000 chars):\n%s",
+                         res.text[:1000])
 
         if new_plan is not None and new_plan != state.get("plan"):
             logger.info("[plan_reviser] plan revised, new version")
@@ -461,7 +461,7 @@ def build_graph(cfg: ProjectConfig):
                 "history": _log(state, "plan_revised",
                                 worker=res.worker, ok=res.ok),
             }
-        logger.warning("[plan_reviser] no revision possible, giving up")
+        logger.error("[plan_reviser] no revision possible, giving up")
         return {
             "status": "qa_failed",
             "history": _log(state, "plan_reviser_give_up",

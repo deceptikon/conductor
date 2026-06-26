@@ -135,8 +135,8 @@ class Worker:
             partial = e.stdout
             if isinstance(partial, bytes):
                 partial = partial.decode("utf-8", "replace")
-            logger.warning("[worker:%s] TIMEOUT after %.1fs (timeout=%d, partial stdout=%d chars):\n%s",
-                           self.name, elapsed, timeout, len(partial or ""), (partial or "")[-2000:])
+            logger.error("[worker:%s] TIMEOUT after %.1fs (timeout=%d, partial stdout=%d chars):\n%s",
+                         self.name, elapsed, timeout, len(partial or ""), (partial or "")[-2000:])
             return WorkerResult(self.name, False, "", partial or "", -1,
                                 cmd_str, error=f"timeout after {timeout}s")
         except FileNotFoundError:
@@ -155,8 +155,8 @@ class Worker:
                      self.name, elapsed, proc.returncode, ok, len(proc.stdout or ""), len(text), len(stderr))
         if not ok:
             error_msg = stderr[-10000:] or "nonzero exit"
-            logger.warning("[worker:%s] FAILED after %.1fs:\n%s",
-                           self.name, elapsed, error_msg)
+            logger.error("[worker:%s] FAILED after %.1fs:\n%s",
+                         self.name, elapsed, error_msg)
         else:
             error_msg = ""
         return WorkerResult(
@@ -199,6 +199,7 @@ class Worker:
             try:
                 ev = json.loads(line_s)
             except json.JSONDecodeError:
+                logger.error("[worker] _extract_stream_json: invalid JSON line: %s", line_s[:300])
                 dropped.append(line_s[:300])
                 continue
             if ev.get("type") == "result" and "result" in ev:

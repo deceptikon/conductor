@@ -245,7 +245,7 @@ def cmd_list(args):
         try:
             snap = json.loads(p.read_text())
         except Exception as e:
-            logger.debug("[list] skipping corrupted ledger %s: %s", p.name, e)
+            logger.error("[list] skipping corrupted ledger %s: %s", p.name, e)
             continue
         rid = p.stem[:12]
         status = snap.get("status", "?")[:19]

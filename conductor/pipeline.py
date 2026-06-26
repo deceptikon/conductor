@@ -43,6 +43,20 @@ def _save_raw_stdout(run_id: str, raw: str, node: str) -> None:
     logger.info("[%s] raw stdout saved to %s", node, path)
 
 
+def _save_prompt(run_id: str, prompt: str, node: str) -> None:
+    """Append a prompt to .conductor/logs/<run_id>.prompt.log."""
+    if not run_id or not prompt:
+        return
+    log_dir = _STATE_DIR / "logs"
+    log_dir.mkdir(parents=True, exist_ok=True)
+    path = log_dir / f"{run_id}.prompt.log"
+    with open(path, "a") as f:
+        f.write(f"\n{'=' * 60}\n=== {node} ===\n")
+        f.write(prompt)
+        if not prompt.endswith("\n"):
+            f.write("\n")
+
+
 class RunState(TypedDict, total=False):
     # --- inputs ---
     project: str
@@ -236,6 +250,7 @@ def build_graph(cfg: ProjectConfig):
         )
         logger.info("[plan] worker=%s model=%s timeout=600 prompt_len=%d",
                      worker.name, worker.model, len(prompt))
+        _save_prompt(state.get("run_id", ""), prompt, "plan")
         res = worker.run(prompt, cwd=cfg.repo, timeout=600)
         _save_raw_stdout(state.get("run_id", ""), res.raw, "plan")
         logger.info("[plan] worker result: ok=%s returncode=%s len=%d error=%s",
@@ -384,6 +399,7 @@ def build_graph(cfg: ProjectConfig):
         )
         logger.info("[act] worker=%s model=%s timeout=1800 retry=%s prompt_len=%d",
                      worker.name, worker.model, retry, len(prompt))
+        _save_prompt(state.get("run_id", ""), prompt, "act")
         res = worker.run(prompt, cwd=cfg.repo, timeout=1800)
         _save_raw_stdout(state.get("run_id", ""), res.raw, "act")
         logger.info("[act] worker result: ok=%s returncode=%s len=%d error=%s",
@@ -449,6 +465,7 @@ def build_graph(cfg: ProjectConfig):
         )
         logger.info("[plan_reviser] worker=%s model=%s timeout=600 prompt_len=%d",
                      worker.name, worker.model, len(prompt))
+        _save_prompt(state.get("run_id", ""), prompt, "plan_reviser")
         res = worker.run(prompt, cwd=cfg.repo, timeout=600)
         _save_raw_stdout(state.get("run_id", ""), res.raw, "plan_reviser")
         logger.info("[plan_reviser] worker result: ok=%s returncode=%s len=%d error=%s",
@@ -532,10 +549,8 @@ def build_graph(cfg: ProjectConfig):
         note = state.get("rejection_note", "")
         logger.info("[route] after_approve: status=%s rejection_note=%s", st, repr(note[:200]) if note else "none")
         if st == "rejected":
-            target = "plan" if note else "end"
-            logger.info("[route] after_approve -> %s (rejected%s)", target,
-                        " with note → re-plan" if note else " without note → end")
-            return target
+            logger.info("[route] after_approve -> plan (rejected, re-planning)")
+            return "plan"
         if st == "reviewing":
             logger.info("[route] after_approve -> review (human edited plan)")
             return "review"

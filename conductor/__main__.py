@@ -146,6 +146,7 @@ def cmd_run(args):
     graph = build_graph(cfg).compile(checkpointer=saver)
     init: dict = {
         "project": cfg.name,
+        "run_id": run_id,
         "task": args.task,
         "task_type": args.type,
         "issue_id": args.issue or "",

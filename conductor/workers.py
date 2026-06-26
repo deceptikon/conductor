@@ -13,21 +13,44 @@ Supported workers (verified headless modes):
 """
 from __future__ import annotations
 
+import io
 import json
 import logging
 import re
 import shlex
 import subprocess
+import threading
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
 logger = logging.getLogger("conductor.workers")
 
+# ------------------------------------------------------------------ #
+#  Prompt log-level policy — trimmed by default, full on -v
+# ------------------------------------------------------------------ #
+
+_PROMPT_HEAD_INFO = 200    # always shown at INFO
+_PROMPT_HEAD_DEBUG = 500   # shown at DEBUG (-v)
+_PROMPT_TAIL_DEBUG = 500   # shown at DEBUG (-v)
+
+def _log_prompt(worker_name: str, prompt: str):
+    """Log prompt preview at INFO (trimmed) and DEBUG (longer)."""
+    logger.info("[worker:%s] prompt head (first %d chars):\n%s",
+                worker_name, _PROMPT_HEAD_INFO, prompt[:_PROMPT_HEAD_INFO])
+    if logger.isEnabledFor(logging.DEBUG):
+        logger.debug("[worker:%s] prompt preview (first %d):\n%s",
+                     worker_name, _PROMPT_HEAD_DEBUG, prompt[:_PROMPT_HEAD_DEBUG])
+        logger.debug("[worker:%s] prompt preview (last %d):\n%s",
+                     worker_name, _PROMPT_TAIL_DEBUG, prompt[-_PROMPT_TAIL_DEBUG:])
+
+
+# ------------------------------------------------------------------ #
+#  ANSI stripping
+# ------------------------------------------------------------------ #
 
 def _strip_ansi(text: str) -> str:
     """Remove ANSI escape sequences from *text*."""
-    # CSI sequences (most common)
     ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
     return ansi_escape.sub("", text)
 
@@ -36,8 +59,8 @@ def _strip_ansi(text: str) -> str:
 class WorkerResult:
     worker: str
     ok: bool
-    text: str                      # final assistant text, best-effort extracted
-    raw: str                       # full stdout (for the ledger / debugging)
+    text: str
+    raw: str
     returncode: int
     cmd: str
     error: str = ""
@@ -45,22 +68,6 @@ class WorkerResult:
 
 @dataclass
 class Worker:
-    """One coding CLI, invoked headless. `name` is the binary on PATH.
-
-    Parameters
-    ----------
-    name:
-        Binary name on PATH — ``claude``, ``gemini``, ``qwen``, ``opencode``, …
-    model:
-        Model identifier passed to the CLI via its native ``-m`` / ``--model``
-        flag (agentic-dependent).  ``None`` = let the CLI use its default.
-    extra_args:
-        Additional CLI arguments appended after the built-in ones.
-    read_only:
-        When ``True``, the worker is forbidden from writing files.  Supported
-        by ``gemini`` (``--approval-mode plan``) and ``qwen``
-        (``--approval-mode plan``).  Ignored for ``claude`` and ``opencode``.
-    """
     name: str
     model: str | None = None
     extra_args: list[str] = field(default_factory=list)
@@ -87,7 +94,6 @@ class Worker:
             return cmd + self.extra_args
 
         if n == "qwen":
-            # Positional query (preferred over deprecated -p) + structured output.
             cmd = ["qwen", prompt, "-o", "stream-json"]
             if self.read_only:
                 cmd += ["--approval-mode", "plan"]
@@ -96,84 +102,138 @@ class Worker:
             return cmd + self.extra_args
 
         if n == "opencode":
-            # `opencode run [message..]` is the headless entry-point.
             cmd = ["opencode", "run", prompt]
             if self.model:
                 cmd += ["-m", self.model]
-            # opencode does not expose --approval-mode in current versions;
-            # read_only is intentionally ignored here.
             return cmd + self.extra_args
 
-        # Generic fallback: assume `-p` headless convention
+        # Generic fallback
         cmd = [n, "-p", prompt]
         if self.model:
             cmd += ["-m", self.model]
         return cmd + self.extra_args
 
     # ------------------------------------------------------------------ #
-    # Execution
+    # Execution — live-streamed via Popen + threads
     # ------------------------------------------------------------------ #
     def run(self, prompt: str, cwd: str | Path, timeout: int = 1800,
             env: dict | None = None) -> WorkerResult:
         cmd = self._build_cmd(prompt)
         cmd_str = " ".join(shlex.quote(c) for c in cmd)
         t0 = time.monotonic()
+
+        # --- start-of-run banner ---
         logger.info("[worker:%s] running: %s", self.name, cmd_str)
         logger.info("[worker:%s]   timeout=%d prompt_len=%d cwd=%s",
                      self.name, timeout, len(prompt), cwd)
-        logger.debug("[worker:%s] prompt preview (first 500 chars):\n%s",
-                     self.name, prompt[:500])
-        logger.debug("[worker:%s] prompt preview (last 500 chars):\n%s",
-                     self.name, prompt[-500:])
+        _log_prompt(self.name, prompt)
+
+        # --- launch subprocess ---
         try:
-            proc = subprocess.run(
-                cmd, cwd=str(cwd), capture_output=True, text=True,
-                timeout=timeout, env=env,
+            proc = subprocess.Popen(
+                cmd, cwd=str(cwd),
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                text=True, bufsize=1, env=env,
             )
-        except subprocess.TimeoutExpired as e:
-            elapsed = time.monotonic() - t0
-            partial = e.stdout
-            if isinstance(partial, bytes):
-                partial = partial.decode("utf-8", "replace")
-            logger.error("[worker:%s] TIMEOUT after %.1fs (timeout=%d, partial stdout=%d chars):\n%s",
-                         self.name, elapsed, timeout, len(partial or ""), (partial or "")[-2000:])
-            return WorkerResult(self.name, False, "", partial or "", -1,
-                                cmd_str, error=f"timeout after {timeout}s")
         except FileNotFoundError:
             elapsed = time.monotonic() - t0
             logger.error("[worker:%s] binary not found on PATH (%.1fs elapsed)", self.name, elapsed)
             return WorkerResult(self.name, False, "", "", -127, cmd_str,
                                 error=f"worker binary not found: {self.name}")
+
+        # --- live-stream stdout + stderr via threads ---
+        stdout_buf = io.StringIO()
+        stderr_buf = io.StringIO()
+        stdout_line_count = [0]
+        stderr_line_count = [0]
+
+        def _tee(stream, buf, level, tag, counter):
+            try:
+                for line in stream:
+                    line_r = line.rstrip()
+                    buf.write(line_r + "\n")
+                    counter[0] += 1
+                    if line_r.strip():
+                        logger.log(level, "[worker:%s] %s %s",
+                                   self.name, tag, line_r[:500])
+            except Exception as e:
+                logger.error("[worker:%s] tee thread died: %s", self.name, e)
+
+        t_out = threading.Thread(
+            target=_tee,
+            args=(proc.stdout, stdout_buf,
+                  logging.INFO, " │", stdout_line_count),
+            daemon=True,
+        )
+        t_err = threading.Thread(
+            target=_tee,
+            args=(proc.stderr, stderr_buf,
+                  logging.WARNING, "ERR│", stderr_line_count),
+            daemon=True,
+        )
+        t_out.start()
+        t_err.start()
+
+        # --- wait for completion ---
+        try:
+            proc.wait(timeout=timeout)
+        except subprocess.TimeoutExpired:
+            elapsed = time.monotonic() - t0
+            proc.kill()
+            t_out.join(timeout=3)
+            t_err.join(timeout=3)
+            partial = stdout_buf.getvalue()
+            logger.error(
+                "[worker:%s] TIMEOUT after %.1fs (timeout=%d, partial stdout=%d chars %d lines):\n%s",
+                self.name, elapsed, timeout,
+                len(partial or ""), stdout_line_count[0],
+                (partial or "")[-2000:],
+            )
+            return WorkerResult(self.name, False, "", partial or "", -1,
+                                cmd_str, error=f"timeout after {timeout}s")
+
+        t_out.join(timeout=5)
+        t_err.join(timeout=5)
+
         elapsed = time.monotonic() - t0
-        text = self._extract_text(proc.stdout)
+        stdout = stdout_buf.getvalue()
+        stderr_raw = stderr_buf.getvalue()
+        text = self._extract_text(stdout)
         ok = proc.returncode == 0
-        stderr = proc.stderr.strip()
-        if stderr:
-            logger.warning("[worker:%s] STDERR (%.1fs, %d chars):\n%s",
-                           self.name, elapsed, len(stderr), stderr[-2000:])
-        logger.info("[worker:%s] done in %.1fs: returncode=%d ok=%s stdout_len=%d text_len=%d stderr_len=%d",
-                     self.name, elapsed, proc.returncode, ok, len(proc.stdout or ""), len(text), len(stderr))
+
+        # --- summary ---
+        logger.info(
+            "[worker:%s] done in %.1fs: returncode=%d ok=%s "
+            "stdout=%d lines/%d chars text=%d chars stderr=%d lines/%d chars",
+            self.name, elapsed, proc.returncode, ok,
+            stdout_line_count[0], len(stdout), len(text),
+            stderr_line_count[0], len(stderr_raw),
+        )
+
         if not ok:
-            error_msg = stderr[-10000:] or "nonzero exit"
+            stderr_final = stderr_raw.strip()
+            error_msg = stderr_final[-10000:] or "nonzero exit"
             logger.error("[worker:%s] FAILED after %.1fs:\n%s",
                          self.name, elapsed, error_msg)
-        else:
-            error_msg = ""
-        return WorkerResult(
-            self.name, ok, text, proc.stdout, proc.returncode, cmd_str,
-            error=error_msg,
-        )
+            return WorkerResult(self.name, False, text, stdout,
+                                proc.returncode, cmd_str, error=error_msg)
+
+        stderr_final = stderr_raw.strip()
+        error_msg = stderr_final[-10000:] if stderr_final else ""
+        return WorkerResult(self.name, True, text, stdout,
+                            proc.returncode, cmd_str, error=error_msg)
 
     # ------------------------------------------------------------------ #
     # Output parsing
     # ------------------------------------------------------------------ #
     def _extract_text(self, stdout: str) -> str:
-        """Pull the final assistant text out of worker stdout."""
         if self.name in ("claude", "qwen"):
             result, dropped = self._extract_stream_json(stdout, return_dropped=True)
             if dropped:
-                logger.info("[worker:%s] _extract_stream_json dropped %d non-JSON lines (stdout preview):\n%s",
-                            self.name, len(dropped), "\n".join(dropped[:5]))
+                logger.info("[worker:%s] _extract_stream_json dropped %d non-JSON lines",
+                            self.name, len(dropped))
+                logger.debug("[worker:%s] dropped lines preview:\n%s",
+                             self.name, "\n".join(dropped[:5]))
             return result
         if self.name == "opencode":
             cleaned = _strip_ansi(stdout)
@@ -186,7 +246,6 @@ class Worker:
     @staticmethod
     def _extract_stream_json(stdout: str, return_dropped: bool = False
                              ) -> str | tuple[str, list[str]]:
-        """Parse newline-delimited JSON events from stream-json output."""
         final: list[str] = []
         dropped: list[str] = []
         result_field: str | None = None
@@ -199,7 +258,6 @@ class Worker:
             try:
                 ev = json.loads(line_s)
             except json.JSONDecodeError:
-                logger.error("[worker] _extract_stream_json: invalid JSON line: %s", line_s[:300])
                 dropped.append(line_s[:300])
                 continue
             if ev.get("type") == "result" and "result" in ev:
@@ -214,17 +272,14 @@ class Worker:
             ret = result_field
         else:
             parsed = "\n".join(final).strip()
-            if not parsed and stdout.strip():
-                ret = stdout.strip()
-            else:
-                ret = parsed or stdout.strip()
+            ret = parsed or stdout.strip()
         if return_dropped:
             return ret, dropped
         return ret
 
 
 # ---------------------------------------------------------------------------
-# Worker factory — the canonical way to build a Worker for any agentic CLI.
+# Worker factory
 # ---------------------------------------------------------------------------
 
 def create_worker(
@@ -233,28 +288,6 @@ def create_worker(
     extra_args: list[str] | None = None,
     read_only: bool = False,
 ) -> Worker:
-    """Create a :class:`Worker` for the given agentic CLI.
-
-    Parameters
-    ----------
-    agentic:
-        The agentic tool to use — ``"claude"``, ``"gemini"``, ``"qwen"``,
-        ``"opencode"``, or any other binary name on PATH.
-    model:
-        Model identifier in the format the CLI expects (e.g.
-        ``"anthropic/claude-sonnet-4-20250514"`` for opencode,
-        ``"qwen3-5plus"`` for qwen).  ``None`` = CLI default.
-    extra_args:
-        Additional CLI arguments (e.g. ``["--yolo"]`` for qwen).
-    read_only:
-        If ``True``, request a read-only / planning mode when the CLI
-        supports it (gemini, qwen).
-
-    Returns
-    -------
-    Worker
-        Ready-to-run worker instance.
-    """
     return Worker(
         name=agentic,
         model=model,
@@ -264,8 +297,7 @@ def create_worker(
 
 
 # ---------------------------------------------------------------------------
-# Legacy dynamic-config table (kept for backward compat with old pipelines).
-# New code should prefer :func:`create_worker`.
+# Legacy
 # ---------------------------------------------------------------------------
 WORKER_CONFIG: dict[str, dict] = {
     "qwencode": {"agentic": "qwen", "model": "qwen3-5plus", "extra_args": []},
@@ -274,11 +306,6 @@ WORKER_CONFIG: dict[str, dict] = {
 
 
 def workerInit(name: str, model: str, extra_args: list[str] | None = None) -> Worker:
-    """Deprecated — use :func:`create_worker` instead.
-
-    Kept for backward compatibility with existing project configs that call
-    ``workerInit`` directly or store entries in ``WORKER_CONFIG``.
-    """
     if extra_args is None:
         extra_args = []
     WORKER_CONFIG[name] = {
@@ -289,12 +316,9 @@ def workerInit(name: str, model: str, extra_args: list[str] | None = None) -> Wo
     return create_worker(agentic=name, model=model, extra_args=extra_args)
 
 
-# ---------------------------------------------------------------------------
-# Default routing table — overridable per project in projects/<name>.toml
-# ---------------------------------------------------------------------------
 DEFAULT_ROUTING = {
-    "plan":   create_worker("gemini", read_only=True),   # read-only planner
-    "act":    create_worker("claude"),                    # careful implementer
-    "bulk":   create_worker("qwen"),                     # high-volume mechanical edits
-    "review": create_worker("claude"),                   # code review / QA reasoning
+    "plan":   create_worker("gemini", read_only=True),
+    "act":    create_worker("claude"),
+    "bulk":   create_worker("qwen"),
+    "review": create_worker("claude"),
 }

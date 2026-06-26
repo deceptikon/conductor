@@ -26,10 +26,27 @@ from .schema import Plan, TaskNode
 
 logger = logging.getLogger("conductor.pipeline")
 
+_STATE_DIR = Path(__file__).parent.parent / ".conductor"
+
+def _save_raw_stdout(run_id: str, raw: str, node: str) -> None:
+    """Append raw worker stdout to .conductor/logs/<run_id>.stdout.log."""
+    if not run_id or not raw:
+        return
+    log_dir = _STATE_DIR / "logs"
+    log_dir.mkdir(parents=True, exist_ok=True)
+    path = log_dir / f"{run_id}.stdout.log"
+    with open(path, "a") as f:
+        f.write(f"\n{'=' * 60}\n=== {node} ===\n")
+        f.write(raw)
+        if not raw.endswith("\n"):
+            f.write("\n")
+    logger.info("[%s] raw stdout saved to %s", node, path)
+
 
 class RunState(TypedDict, total=False):
     # --- inputs ---
     project: str
+    run_id: str                # durable run id (for file paths)
     task: str                  # the user's task description
     task_type: str             # conventional-commit type: feat|fix|refactor|...
     issue_id: str              # RVC/vault issue id, e.g. STORY-83 (optional)
@@ -212,9 +229,8 @@ def build_graph(cfg: ProjectConfig):
         )
         logger.info("[plan] worker=%s model=%s timeout=600 prompt_len=%d",
                      worker.name, worker.model, len(prompt))
-        logger.debug("[plan] prompt preview (first 600 chars):\n%s", prompt[:600])
-        logger.debug("[plan] prompt preview (last 600 chars):\n%s", prompt[-600:])
         res = worker.run(prompt, cwd=cfg.repo, timeout=600)
+        _save_raw_stdout(state.get("run_id", ""), res.raw, "plan")
         logger.info("[plan] worker result: ok=%s returncode=%s len=%d error=%s",
                      res.ok, res.returncode, len(res.text), res.error or "none")
         if not res.ok:
@@ -358,9 +374,8 @@ def build_graph(cfg: ProjectConfig):
         )
         logger.info("[act] worker=%s model=%s timeout=1800 retry=%s prompt_len=%d",
                      worker.name, worker.model, retry, len(prompt))
-        logger.debug("[act] prompt preview (first 600 chars):\n%s", prompt[:600])
-        logger.debug("[act] prompt preview (last 600 chars):\n%s", prompt[-600:])
         res = worker.run(prompt, cwd=cfg.repo, timeout=1800)
+        _save_raw_stdout(state.get("run_id", ""), res.raw, "act")
         logger.info("[act] worker result: ok=%s returncode=%s len=%d error=%s",
                      res.ok, res.returncode, len(res.text), res.error or "none")
         if not res.ok:
@@ -424,9 +439,8 @@ def build_graph(cfg: ProjectConfig):
         )
         logger.info("[plan_reviser] worker=%s model=%s timeout=600 prompt_len=%d",
                      worker.name, worker.model, len(prompt))
-        logger.debug("[plan_reviser] prompt preview (first 600 chars):\n%s", prompt[:600])
-        logger.debug("[plan_reviser] prompt preview (last 600 chars):\n%s", prompt[-600:])
         res = worker.run(prompt, cwd=cfg.repo, timeout=600)
+        _save_raw_stdout(state.get("run_id", ""), res.raw, "plan_reviser")
         logger.info("[plan_reviser] worker result: ok=%s returncode=%s len=%d error=%s",
                      res.ok, res.returncode, len(res.text), res.error or "none")
         if not res.ok:

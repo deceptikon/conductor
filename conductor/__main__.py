@@ -130,6 +130,8 @@ def cmd_run(args):
         ]
         if args.issue:
             cmd += ["--issue", args.issue]
+        if args.rvc_mode != "full":
+            cmd += ["--rvc-mode", args.rvc_mode]
         with open(log_path, "w") as fp:
             subprocess.Popen(cmd, stdout=fp, stderr=subprocess.STDOUT)
         print(f"run_id: {run_id}")
@@ -150,6 +152,7 @@ def cmd_run(args):
         "task": args.task,
         "task_type": args.type,
         "issue_id": args.issue or "",
+        "rvc_mode": args.rvc_mode,
         "qa_attempts": 0,
         "history": [],
     }
@@ -331,6 +334,8 @@ def main(argv=None):
     r.add_argument("project"); r.add_argument("task")
     r.add_argument("--type", default="feat", help="conventional-commit type")
     r.add_argument("--issue", default="", help="RVC/vault issue id")
+    r.add_argument("--rvc-mode", default="full", choices=["full", "get", "off"],
+                   help="RVC context mode: full (issue+links), get (issue only), off (skip)")
     r.add_argument("--run-id", default="")
     r.add_argument("--bg", action="store_true", help="fire-and-forget: return run_id immediately, detach")
     r.set_defaults(fn=cmd_run)

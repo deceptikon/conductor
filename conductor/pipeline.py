@@ -50,6 +50,7 @@ class RunState(TypedDict, total=False):
     task: str                  # the user's task description
     task_type: str             # conventional-commit type: feat|fix|refactor|...
     issue_id: str              # RVC/vault issue id, e.g. STORY-83 (optional)
+    rvc_mode: str              # "full" (default), "get", or "off"
     # --- accumulated ledger ---
     contract: str              # AGENTS.md content injected into every worker
     plan: Plan | None          # structured plan output (replaces string plan)
@@ -109,16 +110,19 @@ def _git_context(repo: Path) -> str:
     return "\n".join(ctx)
 
 
-def _rvc_context(issue_id: str, repo: Path) -> str:
+def _rvc_context(issue_id: str, repo: Path, mode: str = "full") -> str:
     """Fetch RVC vault context for an issue via the rvc CLI.
 
     Falls back to ~/.local/bin/rvc if rvc is not on PATH.
     Returns empty string on failure so the pipeline never breaks.
+
+    mode: "full" = rvc context (issue + all linked docs, ~80K chars)
+          "get"  = rvc get (issue file only, ~2K chars)
+          "off"  = skip RVC entirely
     """
-    if not issue_id:
+    if not issue_id or mode == "off":
         return ""
     rvc_bin = "rvc"
-    # Verify rvc is on PATH; fall back to ~/.local/bin/rvc
     if subprocess.run(["which", rvc_bin], capture_output=True).returncode != 0:
         fallback = Path.home() / ".local" / "bin" / "rvc"
         if fallback.exists():
@@ -127,18 +131,18 @@ def _rvc_context(issue_id: str, repo: Path) -> str:
             logger.warning("[rvc] binary not found on PATH or at %s", fallback)
             return ""
     try:
+        cmd = [rvc_bin, "get", issue_id] if mode == "get" else [rvc_bin, "context", issue_id]
         proc = subprocess.run(
-            [rvc_bin, "context", issue_id],
-            cwd=str(repo), capture_output=True, text=True, timeout=30, check=False,
+            cmd, cwd=str(repo), capture_output=True, text=True, timeout=30, check=False,
         )
         if proc.returncode == 0 and proc.stdout.strip():
-            logger.info("[rvc] fetched context for %s (%d chars)", issue_id, len(proc.stdout))
-            return f"# RVC ISSUE CONTEXT ({issue_id})\n{proc.stdout.strip()}\n"
+            logger.info("[rvc] fetched %s for %s (%d chars)", mode, issue_id, len(proc.stdout))
+            return f"# RVC ISSUE CONTEXT ({issue_id}, mode={mode})\n{proc.stdout.strip()}\n"
         else:
-            logger.warning("[rvc] context fetch failed for %s (exit=%d, stderr %d chars):\n%s",
-                           issue_id, proc.returncode, len(proc.stderr), proc.stderr.strip()[-1000:])
+            logger.warning("[rvc] %s fetch failed for %s (exit=%d, stderr %d chars):\n%s",
+                           mode, issue_id, proc.returncode, len(proc.stderr), proc.stderr.strip()[-1000:])
     except Exception as e:
-        logger.error("[rvc] exception fetching context for %s: %s", issue_id, e, exc_info=True)
+        logger.error("[rvc] exception fetching %s for %s: %s", mode, issue_id, e, exc_info=True)
     return ""
 
 
@@ -199,7 +203,7 @@ def build_graph(cfg: ProjectConfig):
         worker = cfg.worker_for("plan")
         rej = state.get("rejection_note", "")
         git_ctx = _git_context(cfg.repo)
-        issue_ctx = _rvc_context(state.get("issue_id", ""), cfg.repo)
+        issue_ctx = _rvc_context(state.get("issue_id", ""), cfg.repo, state.get("rvc_mode", "full"))
         logger.info("[plan] prompt breakdown: agents_md=%d rvc=%d git=%d task=%d rej=%d",
                      len(contract), len(issue_ctx), len(git_ctx),
                      len(state["task"]), len(rej))
@@ -362,7 +366,7 @@ def build_graph(cfg: ProjectConfig):
         qa_log = state.get("qa_log", "")
         retry = bool(qa_log) and not state.get("qa_passed", False)
         plan_json = _plan_to_json(state.get("plan"))
-        issue_ctx = _rvc_context(state.get("issue_id", ""), cfg.repo)
+        issue_ctx = _rvc_context(state.get("issue_id", ""), cfg.repo, state.get("rvc_mode", "full"))
         logger.info("[act] prompt breakdown: contract=%d plan=%d rvc=%d task=%d qa_log=%d",
                      len(state["contract"]), len(plan_json),
                      len(issue_ctx), len(state["task"]), len(qa_log))

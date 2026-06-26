@@ -21,12 +21,12 @@ max_qa_retries = 2
 
 [routing.plan]
 worker = "qwen"
-model = "qwen/qwen3.7-plus"
+model = "qwen/qwen3-coder-flash"
 read_only = true          # --approval-mode plan: planner cannot write
 
 [routing.act]
 worker = "qwen"
-model = "qwen/qwen3.6-plus"
+model = "qwen/qwen3-coder-flash"
 
 [routing.bulk]
 worker = "qwen"
@@ -34,7 +34,7 @@ model = "qwen/qwen3-coder-flash"
 
 [routing.review]
 worker = "qwen"
-model = "qwen/qwen3.7-max"
+model = "qwen/qwen3-coder-flash"
 
 # --- alternate agentic examples (uncomment to try) ---
 # [routing.plan]

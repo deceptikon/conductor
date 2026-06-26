@@ -118,14 +118,13 @@ class Worker:
         cmd = self._build_cmd(prompt)
         cmd_str = " ".join(shlex.quote(c) for c in cmd)
         t0 = time.monotonic()
-        logger.info("[worker:%s] running (timeout=%d, prompt_len=%d, cwd=%s)",
+        logger.info("[worker:%s] running: %s", self.name, cmd_str)
+        logger.info("[worker:%s]   timeout=%d prompt_len=%d cwd=%s",
                      self.name, timeout, len(prompt), cwd)
-        logger.debug("[worker:%s] command: %s", self.name, cmd_str[:2000])
         logger.debug("[worker:%s] prompt preview (first 500 chars):\n%s",
                      self.name, prompt[:500])
         logger.debug("[worker:%s] prompt preview (last 500 chars):\n%s",
                      self.name, prompt[-500:])
-        logger.info("[worker:%s] waiting for output...", self.name)
         try:
             proc = subprocess.run(
                 cmd, cwd=str(cwd), capture_output=True, text=True,
@@ -136,8 +135,8 @@ class Worker:
             partial = e.stdout
             if isinstance(partial, bytes):
                 partial = partial.decode("utf-8", "replace")
-            logger.warning("[worker:%s] TIMEOUT after %ds (%.1fs elapsed, partial stdout=%d chars)",
-                           self.name, timeout, elapsed, len(partial or ""))
+            logger.warning("[worker:%s] TIMEOUT after %.1fs (timeout=%d, partial stdout=%d chars):\n%s",
+                           self.name, elapsed, timeout, len(partial or ""), (partial or "")[-2000:])
             return WorkerResult(self.name, False, "", partial or "", -1,
                                 cmd_str, error=f"timeout after {timeout}s")
         except FileNotFoundError:
@@ -150,14 +149,14 @@ class Worker:
         ok = proc.returncode == 0
         stderr = proc.stderr.strip()
         if stderr:
-            logger.debug("[worker:%s] stderr (%d chars):\n%s",
-                         self.name, len(stderr), stderr[-2000:])
+            logger.warning("[worker:%s] STDERR (%.1fs, %d chars):\n%s",
+                           self.name, elapsed, len(stderr), stderr[-2000:])
         logger.info("[worker:%s] done in %.1fs: returncode=%d ok=%s stdout_len=%d text_len=%d stderr_len=%d",
                      self.name, elapsed, proc.returncode, ok, len(proc.stdout or ""), len(text), len(stderr))
         if not ok:
             error_msg = stderr[-10000:] or "nonzero exit"
-            logger.warning("[worker:%s] FAILED after %.1fs (%d chars stderr):\n%s",
-                           self.name, elapsed, len(stderr), error_msg)
+            logger.warning("[worker:%s] FAILED after %.1fs:\n%s",
+                           self.name, elapsed, error_msg)
         else:
             error_msg = ""
         return WorkerResult(
@@ -171,50 +170,56 @@ class Worker:
     def _extract_text(self, stdout: str) -> str:
         """Pull the final assistant text out of worker stdout."""
         if self.name in ("claude", "qwen"):
-            # Both CLIs support `-o stream-json` (newline-delimited events).
-            # We try the same best-effort parser; if the format diverges we
-            # fall back to raw stdout.
-            return self._extract_stream_json(stdout)
+            result, dropped = self._extract_stream_json(stdout, return_dropped=True)
+            if dropped:
+                logger.info("[worker:%s] _extract_stream_json dropped %d non-JSON lines (stdout preview):\n%s",
+                            self.name, len(dropped), "\n".join(dropped[:5]))
+            return result
         if self.name == "opencode":
-            # opencode prints ANSI escape codes and a header line like
-            # "> build · provider/model". Strip those artefacts.
             cleaned = _strip_ansi(stdout)
             lines = cleaned.splitlines()
-            # Drop header lines that start with "> build"
             while lines and lines[0].strip().startswith("> build"):
                 lines = lines[1:]
             return "\n".join(lines).strip()
-        # gemini / generic: plain text on stdout
         return stdout.strip()
 
     @staticmethod
-    def _extract_stream_json(stdout: str) -> str:
+    def _extract_stream_json(stdout: str, return_dropped: bool = False
+                             ) -> str | tuple[str, list[str]]:
         """Parse newline-delimited JSON events from stream-json output."""
         final: list[str] = []
+        dropped: list[str] = []
         result_field: str | None = None
         for line in stdout.splitlines():
-            line = line.strip()
-            if not line or not line.startswith("{"):
+            line_s = line.strip()
+            if not line_s or not line_s.startswith("{"):
+                if line.strip():
+                    dropped.append(line.rstrip()[:300])
                 continue
             try:
-                ev = json.loads(line)
+                ev = json.loads(line_s)
             except json.JSONDecodeError:
+                dropped.append(line_s[:300])
                 continue
-            # claude-style result envelope
             if ev.get("type") == "result" and "result" in ev:
                 result_field = ev["result"]
-            # assistant message content blocks (claude & qwen-compatible)
             msg = ev.get("message", {})
             for block in (msg.get("content") or []):
                 if isinstance(block, dict) and block.get("type") == "text":
                     final.append(block.get("text", ""))
-            # qwen may emit content directly in some event shapes
             if isinstance(ev.get("content"), str):
                 final.append(ev["content"])
         if result_field:
-            return result_field
-        parsed = "\n".join(final).strip()
-        return parsed or stdout.strip()
+            ret = result_field
+        else:
+            parsed = "\n".join(final).strip()
+            if not parsed and stdout.strip():
+                ret = stdout.strip()
+            else:
+                ret = parsed or stdout.strip()
+        if return_dropped:
+            return ret, dropped
+        return ret
 
 
 # ---------------------------------------------------------------------------

@@ -236,7 +236,10 @@ def build_graph(cfg: ProjectConfig):
             parse_ok = True
             logger.info("[plan] parsed plan with %d nodes", len(plan.nodes))
         except Exception as e:
-            logger.warning("[plan] failed to parse planner output: %s", e)
+            logger.warning("[plan] failed to parse planner output (%d chars): %s",
+                           len(res.text), e)
+            logger.warning("[plan] raw worker output (first 1000 chars):\n%s",
+                           res.text[:1000])
 
         return {
             "contract": contract,
@@ -362,6 +365,7 @@ def build_graph(cfg: ProjectConfig):
                      res.ok, res.returncode, len(res.text), res.error or "none")
         if not res.ok:
             logger.warning("[act] worker returned error:\n%s", res.error)
+            logger.warning("[act] raw worker output (first 1000 chars):\n%s", res.text[:1000])
         return {
             "act_output": res.text,
             "status": "qa",
@@ -440,7 +444,10 @@ def build_graph(cfg: ProjectConfig):
             data = json.loads(text)
             new_plan = _json_to_plan(data)
         except Exception as e:
-            logger.warning("[plan_reviser] failed to parse worker output: %s", e)
+            logger.warning("[plan_reviser] failed to parse worker output (%d chars): %s",
+                           len(res.text), e)
+            logger.warning("[plan_reviser] raw worker output (first 1000 chars):\n%s",
+                           res.text[:1000])
 
         if new_plan is not None and new_plan != state.get("plan"):
             logger.info("[plan_reviser] plan revised, new version")

@@ -421,8 +421,10 @@ def build_graph(cfg: ProjectConfig):
         logger.info("[qa] attempt %d: running %s", attempts, cfg.qa_cmd)
         t0 = time.monotonic()
         logger.info("[qa] waiting for tests...")
+        import shlex
+        cmd_args = shlex.split(cfg.qa_cmd)
         proc = subprocess.run(
-            cfg.qa_cmd, cwd=str(cfg.repo), shell=True,
+            cmd_args, cwd=str(cfg.repo),
             capture_output=True, text=True, timeout=1800,
         )
         elapsed = time.monotonic() - t0

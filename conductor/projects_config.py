@@ -40,6 +40,8 @@ class ProjectConfig:
                 model=spec.get("model"),
                 extra_args=spec.get("extra_args", []),
                 read_only=spec.get("read_only", False),
+                use_dash=spec.get("use_dash", False),
+                dash_mode=spec.get("dash_mode", "sh"),
             )
         return cls(
             name=p["name"],

@@ -18,6 +18,8 @@ max_qa_retries = 2
 #   model       = model identifier passed via the CLI's -m / --model flag
 #   extra_args  = list of additional CLI arguments
 #   read_only   = true enforces planning mode (gemini, qwen only)
+#   use_dash    = true spawns the job in the dash TUI instead of a local subprocess
+#   dash_mode   = "sh" (shell), "exec" (direct), or "wt" (WezTerm PTY pane); default "sh"
 
 [routing.plan]
 worker = "qwen"

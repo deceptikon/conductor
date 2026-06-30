@@ -9,7 +9,7 @@ import tomllib
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from .workers import Worker
+from .workers import Worker, create_worker
 
 PROJECTS_DIR = Path(__file__).parent / "projects"
 
@@ -35,12 +35,11 @@ class ProjectConfig:
         repo = Path(p["repo"]).expanduser()
         routing = {}
         for node, spec in (data.get("routing") or {}).items():
-            routing[node] = Worker(
-                name=spec["worker"],
+            routing[node] = create_worker(
+                agentic=spec["worker"],
                 model=spec.get("model"),
                 extra_args=spec.get("extra_args", []),
                 read_only=spec.get("read_only", False),
-                use_dash=spec.get("use_dash", False),
                 dash_mode=spec.get("dash_mode", "sh"),
             )
         return cls(
@@ -59,26 +58,13 @@ class ProjectConfig:
 
         The lookup order is:
         1. Project‑specific routing defined in the TOML file (``self.routing``).
-        2. Dynamic temporary workers stored in the module‑level
-           ``WORKER_CONFIG`` dict (created via :func:`~conductor.workers.create_worker`).
-        3. The static ``DEFAULT_ROUTING`` fallback.
+        2. The static ``DEFAULT_ROUTING`` fallback.
         """
-        from .workers import DEFAULT_ROUTING, WORKER_CONFIG, create_worker
+        from .workers import DEFAULT_ROUTING
 
         # 1. Project‑specific routing
         if node in self.routing:
             return self.routing[node]
 
-        # 2. Dynamic temporary workers – if a config entry exists we create a
-        #    Worker on‑the‑fly using the canonical factory.
-        if node in WORKER_CONFIG:
-            cfg = WORKER_CONFIG[node]
-            return create_worker(
-                agentic=cfg.get("agentic", cfg.get("binary", node)),
-                model=cfg.get("model"),
-                extra_args=cfg.get("extra_args", []),
-                read_only=cfg.get("read_only", False),
-            )
-
-        # 3. Fallback to the built‑in defaults
+        # 2. Fallback to the built‑in defaults
         return DEFAULT_ROUTING[node]

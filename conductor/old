@@ -10,43 +10,21 @@ Supported workers (verified headless modes):
   gemini    -> `gemini -p <prompt> [--approval-mode plan|yolo]`    (plan = read-only)
   qwen      -> `qwen <prompt> -o stream-json`                      (structured, positional)
   opencode  -> `opencode run <prompt>`                             (plain text)
-
-Dash mode: when use_dash=True, the worker spawns as a dash TUI job instead of
-running a local subprocess. Set dash_mode="wt" for a WezTerm interactive pane,
-"exec" for direct exec, or "sh" for a shell-wrapped job (default).
 """
 from __future__ import annotations
 
 import io
 import json
 import logging
-import os
 import re
 import shlex
 import subprocess
-import sys
 import threading
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Literal
 
 logger = logging.getLogger("conductor.workers")
-
-DashMode = Literal["sh", "exec", "wt"]
-
-def _import_dash_client():
-    """Lazy-import DashClient, adding ~/X/dash to sys.path if needed."""
-    try:
-        from dash_client import DashClient
-        return DashClient
-    except ImportError:
-        candidate = Path.home() / "X" / "dash"
-        if candidate.is_dir():
-            sys.path.insert(0, str(candidate))
-            from dash_client import DashClient
-            return DashClient
-        raise
 
 # ------------------------------------------------------------------ #
 #  Prompt log-level policy — trimmed by default, full on -v
@@ -94,8 +72,6 @@ class Worker:
     model: str | None = None
     extra_args: list[str] = field(default_factory=list)
     read_only: bool = False
-    use_dash: bool = False
-    dash_mode: DashMode = "sh"
 
     # ------------------------------------------------------------------ #
     # Command construction
@@ -148,40 +124,11 @@ class Worker:
 
         # --- start-of-run banner ---
         logger.info("[worker:%s] running: %s", self.name, cmd_str)
-        logger.info("[worker:%s]   timeout=%d prompt_len=%d cwd=%s use_dash=%s dash_mode=%s",
-                     self.name, timeout, len(prompt), cwd, self.use_dash, self.dash_mode)
+        logger.info("[worker:%s]   timeout=%d prompt_len=%d cwd=%s",
+                     self.name, timeout, len(prompt), cwd)
         _log_prompt(self.name, prompt)
 
-        # --- dash mode: push to dash TUI instead of local subprocess ---
-        if self.use_dash:
-            try:
-                DashClient = _import_dash_client()
-                client = DashClient()
-                ok = client.push(
-                    worker=self.name,
-                    command=cmd_str,
-                    cwd=str(cwd),
-                    mode=self.dash_mode,
-                )
-            except Exception as exc:
-                elapsed = time.monotonic() - t0
-                logger.error("[worker:%s] dash push failed after %.1fs: %s",
-                             self.name, elapsed, exc)
-                return WorkerResult(self.name, False, "", "", -1, cmd_str,
-                                    error=f"dash push failed: {exc}")
-
-            elapsed = time.monotonic() - t0
-            if ok:
-                logger.info("[worker:%s] pushed to dash (%.1fs)", self.name, elapsed)
-                return WorkerResult(self.name, True, "", "", 0, cmd_str,
-                                    error="")  # no text captured — dash owns the pane
-            else:
-                logger.warning("[worker:%s] dash push returned False (%.1fs) — dash not running?",
-                               self.name, elapsed)
-                return WorkerResult(self.name, False, "", "", -1, cmd_str,
-                                    error="dash push failed: dash not running?")
-
-        # --- local subprocess mode (original) ---
+        # --- launch subprocess ---
         try:
             proc = subprocess.Popen(
                 cmd, cwd=str(cwd),
@@ -340,16 +287,12 @@ def create_worker(
     model: str | None = None,
     extra_args: list[str] | None = None,
     read_only: bool = False,
-    use_dash: bool = False,
-    dash_mode: DashMode = "sh",
 ) -> Worker:
     return Worker(
         name=agentic,
         model=model,
         extra_args=list(extra_args) if extra_args else [],
         read_only=read_only,
-        use_dash=use_dash,
-        dash_mode=dash_mode,
     )
 
 
@@ -362,19 +305,15 @@ WORKER_CONFIG: dict[str, dict] = {
 }
 
 
-def workerInit(name: str, model: str, extra_args: list[str] | None = None,
-               use_dash: bool = False, dash_mode: DashMode = "sh") -> Worker:
+def workerInit(name: str, model: str, extra_args: list[str] | None = None) -> Worker:
     if extra_args is None:
         extra_args = []
     WORKER_CONFIG[name] = {
         "agentic": name,
         "model": model,
         "extra_args": [model] + extra_args,
-        "use_dash": use_dash,
-        "dash_mode": dash_mode,
     }
-    return create_worker(agentic=name, model=model, extra_args=extra_args,
-                         use_dash=use_dash, dash_mode=dash_mode)
+    return create_worker(agentic=name, model=model, extra_args=extra_args)
 
 
 # TODO: что это дает,?
@@ -384,49 +323,3 @@ DEFAULT_ROUTING = {
     "bulk":   create_worker("qwen"),
     "review": create_worker("claude"),
 }
-
-
-# ---------------------------------------------------------------------------
-# Clean entrypoint — launch a worker with minimal boilerplate.
-# This is the intended integration point for external code (pult, etc.).
-# ---------------------------------------------------------------------------
-
-def launch_worker(
-    worker_name: str,
-    prompt: str,
-    *,
-    model: str | None = None,
-    cwd: str | Path | None = None,
-    extra_args: list[str] | None = None,
-    read_only: bool = False,
-    use_dash: bool = False,
-    dash_mode: DashMode = "sh",
-    timeout: int = 1800,
-    env: dict | None = None,
-) -> WorkerResult:
-    """Create a worker, run it, return the result.
-
-    This is the single entrypoint for external code (pult, scripts, etc.)
-    to invoke an agentic CLI. Example::
-
-        from conductor.workers import launch_worker
-
-        result = launch_worker(
-            "qwen",
-            "Explain TCP in 10 words",
-            model="qwen/qwen3-coder-flash",
-            use_dash=True,
-            dash_mode="wt",
-        )
-        print(result.ok, result.text[:200])
-    """
-    cwd = Path(cwd or Path.cwd())
-    worker = create_worker(
-        agentic=worker_name,
-        model=model,
-        extra_args=extra_args,
-        read_only=read_only,
-        use_dash=use_dash,
-        dash_mode=dash_mode,
-    )
-    return worker.run(prompt, cwd=cwd, timeout=timeout, env=env)

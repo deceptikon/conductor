@@ -1,4 +1,6 @@
 ---
+aliases:
+  - STORY-93
 type: story
 status: Done
 priority: P1

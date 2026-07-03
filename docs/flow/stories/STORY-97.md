@@ -1,4 +1,6 @@
 ---
+aliases:
+  - STORY-97
 type: story
 status: To Do
 priority: P1

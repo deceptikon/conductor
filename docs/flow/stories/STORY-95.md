@@ -1,4 +1,6 @@
 ---
+aliases:
+  - STORY-95
 type: story
 status: To Do
 priority: P0

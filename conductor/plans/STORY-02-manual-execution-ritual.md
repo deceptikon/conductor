@@ -1,4 +1,6 @@
 ---
+aliases:
+  - STORY-02
 domain: workflow_meta
 domain_tags: ["planning"]
 

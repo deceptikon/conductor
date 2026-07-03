@@ -1,4 +1,6 @@
 ---
+aliases:
+  - STORY-87
 type: task
 status: Backlog
 priority: P1

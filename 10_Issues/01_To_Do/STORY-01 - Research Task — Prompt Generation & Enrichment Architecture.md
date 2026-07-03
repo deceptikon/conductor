@@ -1,4 +1,6 @@
 ---
+aliases:
+  - STORY-01
 type: story
 status: To Do
 priority: Medium

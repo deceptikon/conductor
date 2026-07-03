@@ -1,4 +1,6 @@
 ---
+aliases:
+  - STORY-87
 type: task
 status: Active
 priority: P1

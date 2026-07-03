@@ -1,4 +1,6 @@
 ---
+aliases:
+  - STORY-98
 type: story
 status: To Do
 priority: P1

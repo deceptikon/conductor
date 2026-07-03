@@ -1,4 +1,6 @@
 ---
+aliases:
+  - STORY-99
 type: story
 status: To Do
 priority: P2

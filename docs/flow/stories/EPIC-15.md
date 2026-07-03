@@ -1,4 +1,6 @@
 ---
+aliases:
+  - EPIC-15
 type: epic
 status: To Do
 priority: P0

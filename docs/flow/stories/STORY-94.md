@@ -1,4 +1,6 @@
 ---
+aliases:
+  - STORY-94
 type: story
 status: To Do
 priority: P0

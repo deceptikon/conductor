@@ -1,4 +1,6 @@
 ---
+aliases:
+  - STORY-02
 tags: [spec]
 ---
 > **Parent:** [[VAULT_DOMAINS]]

@@ -1,4 +1,6 @@
 ---
+aliases:
+  - STORY-87
 id: STORY-87
 tags: [workflow]
 domain: workflow_meta

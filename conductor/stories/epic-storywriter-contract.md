@@ -69,6 +69,10 @@ plan ──► review ──► approve ──► act ──► qa ──► com
 | [STORY-008](story-008-toml-routing.md) | TOML per-node routing for all new pipeline nodes | Technical |
 | [STORY-009](story-009-graph-rewiring.md) | `build_graph` rewiring: insert subflows before `plan` | Technical |
 
+## Epic Gate
+
+See [[epic-gate-storywriter-contract]] for the development gate, acceptance criteria, and phasing plan.
+
 ## Definition of Done (Epic Level)
 
 1. All 9 child stories are accepted.

@@ -104,7 +104,7 @@ When `--issue STORY-XX` is passed to `conductor run`, the pipeline automatically
 - [[conductor/00_Project/HANDOVER]]
 - [[conductor/00_Project/OVERALL_COMMON_REPORT]]
 - [[conductor/docs/flow/FLOW_DOCS_INDEX]]
-- [[teamflow/conductor/10_Issues/01_To_Do/STORY-02 - Epic Gate — Pre-Planning Storywriter & Contract Creation Pipeline|STORY-02]]
+- [[teamflow/conductor/conductor/stories/epic-gate-storywriter-contract|Epic Gate — Pre-Planning Storywriter & Contract Creation Pipeline]]
 - [[conductor/2026-07-01]]
 - [[conductor/conductor/plans/STORY-02-manual-execution-ritual]]
 - [[conductor/plans/refined-verifiable-plan-generation]]

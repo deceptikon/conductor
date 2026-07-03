@@ -78,3 +78,8 @@ These files were copied from `~/Documents/ADLAI/adlai-vault/` on 2026-06-28.
 
 The originals remain in ADLAI vault for backward compatibility. These copies are the canonical reference for cross-system planning.
 
+
+
+## Sub-Documents & Context
+- [[CHECKPOINT]]
+- [[CHECKPOINT_POSTMORTEM]]

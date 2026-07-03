@@ -96,3 +96,16 @@ When `--issue STORY-XX` is passed to `conductor run`, the pipeline automatically
 - `qa_cmd` is executed with `shell=True` in the `repo` directory.
 - Routing fallback order: project TOML → `WORKER_CONFIG` dict → `DEFAULT_ROUTING` in `workers.py`.
 
+
+
+## Sub-Documents & Context
+- [[conductor/00_Project/REGLAMENT]]
+- [[conductor/00_Project/AGENTS]]
+- [[conductor/00_Project/HANDOVER]]
+- [[conductor/00_Project/OVERALL_COMMON_REPORT]]
+- [[conductor/docs/flow/FLOW_DOCS_INDEX]]
+- [[conductor/10_Issues/01_To_Do/STORY-02 - Epic Gate — Pre-Planning Storywriter & Contract Creation Pipeline.md|STORY-02]]
+- [[conductor/2026-07-01]]
+- [[conductor/conductor/plans/STORY-02-manual-execution-ritual]]
+- [[conductor/plans/refined-verifiable-plan-generation]]
+- [[conductor/plans/refined-verifiable-plan-generation-v2]]

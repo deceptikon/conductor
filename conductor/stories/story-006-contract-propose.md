@@ -1,9 +1,15 @@
+---
+domain: workflow_meta
+domain_tags: ["planning"]
+
 # STORY-006: `contract_propose` Node — Story-to-Technical-Contract Generation
 
 **Epic**: [Pre-Planning Storywriter & Contract Creation Pipeline](epic-storywriter-contract.md)
 **Type**: Functional Story
 
 ---
+> **Parent:** [[VAULT_DOMAINS]]
+
 
 As a **pipeline operator**,
 I want Conductor to automatically derive a task-specific technical contract
@@ -81,3 +87,4 @@ static `AGENTS.md`.
 - STORY-005 (`rvc_link` node precedes this in the graph)
 - STORY-008 (TOML routing for `contract_propose` worker)
 - STORY-009 (graph edge: `rvc_link → contract_propose`)
+

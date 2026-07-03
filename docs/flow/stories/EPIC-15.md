@@ -6,8 +6,10 @@ created: 2026-06-16
 updated: 2026-06-16
 id: EPIC-15
 title: Workflow-Orchestration-and-Pult-Integration
-tags: [cicd, citation, database, eval, frontend, infra, llm, observability, phase-gating, pult, routing, session-bootstrap, testing, vault, workflow]
+tags: [phase-gating, pult, vault, workflow]
 related: "[[STORY-87]], [[L3_PHASE_GATING]], [[L5_BOOTSTRAP]], [[CHECKPOINT_POSTMORTEM]]"
+domain: workflow_meta
+domain_tags: ["epic", "testing"]
 ---
 
 # EPIC-15: Workflow Orchestration & Pult Integration

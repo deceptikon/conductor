@@ -1,3 +1,7 @@
+---
+domain: workflow_meta
+domain_tags: []
+
 # Flow Documentation Index
 
 *This directory contains all flow/orchestration-related documentation consolidated from the ADLAI project vault. These files conceptually belong to the Conductor+RVC meta-project, not ADLAI's legal AI business logic.*
@@ -73,3 +77,4 @@ These files were copied from `~/Documents/ADLAI/adlai-vault/` on 2026-06-28.
 - Scripts: `00_Project/`
 
 The originals remain in ADLAI vault for backward compatibility. These copies are the canonical reference for cross-system planning.
+

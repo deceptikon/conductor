@@ -1,3 +1,7 @@
+---
+domain: workflow_meta
+domain_tags: ["planning"]
+
 # Conductor — Agent Quick-Start
 
 Model-agnostic agent orchestration harness. Drives headless coding CLIs through a LangGraph pipeline: Plan → Review → Human Gate → Act → QA → Commit.
@@ -141,3 +145,4 @@ When `--issue STORY-XX` is passed, the pipeline fetches the issue story and inje
 4. Priority 5: wire up or drop unused `bulk` node (5 min).
 5. Priority 6: add unit tests (2–3 days).
 6. Priority 7: rebuild PlanReviser as a real diagnosis node (1–2 days).
+

@@ -1,3 +1,9 @@
+> **Active Epic:** [[epic-storywriter-contract]]
+
+---
+domain: workflow_meta
+domain_tags: ["planning"]
+
 # Conductor
 
 Model-agnostic agent orchestration harness. Drives headless coding CLIs through a LangGraph pipeline: **Plan → Review → Human Gate → Act → QA → Commit**.
@@ -89,3 +95,4 @@ When `--issue STORY-XX` is passed to `conductor run`, the pipeline automatically
 - `agents_md` path defaults to `<repo>/AGENTS.md` but can be overridden (ADLAI uses `~/Documents/ADLAI/CLAUDE.md`).
 - `qa_cmd` is executed with `shell=True` in the `repo` directory.
 - Routing fallback order: project TOML → `WORKER_CONFIG` dict → `DEFAULT_ROUTING` in `workers.py`.
+

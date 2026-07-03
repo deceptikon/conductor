@@ -1,3 +1,7 @@
+---
+domain: workflow_meta
+domain_tags: []
+
 ****General Prompt Structure for Agentic Flow Systems (Multi-Mode Agents)**
 
 This template is designed to be **modular**, **maintainable**, and **mode-specific** while avoiding the excessive length of the Zoo example. It balances structure with flexibility.

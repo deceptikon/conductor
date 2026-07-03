@@ -6,7 +6,9 @@ epic: "[[EPIC-09]]"
 started: 2026-06-16
 id: STORY-93
 title: L3-MVP-2-SYNC-artifact-creation-and-ENGAGE-gate
-tags: [cicd, citation, database, eval, frontend, infra, llm, observability, testing]
+tags: [workflow]
+domain: workflow_meta
+domain_tags: ["story", "testing"]
 ---
 
 # STORY-93: L3 MVP-2: SYNC artifact creation and ENGAGE gate

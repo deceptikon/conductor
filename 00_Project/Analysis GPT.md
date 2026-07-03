@@ -1,3 +1,7 @@
+---
+domain: workflow_meta
+domain_tags: []
+
 Below is a reusable, modular prompt structure you can adapt for different agentic modes (Researcher, Senior Coder, Junior Coder, Architector, Storywriter, etc.). First the universal core template, then concrete mode-specific prompt examples you can copy and adapt.
 
 Core prompt (short version)

@@ -3,9 +3,9 @@ type: story
 status: To Do
 priority: High
 started: 2026-06-30
+domain: workflow_meta
+domain_tags: ["planning", "story"]
 ---
-
-# STORY-02: Epic Gate — Pre-Planning Storywriter & Contract Creation Pipeline
 
 ## Context
 

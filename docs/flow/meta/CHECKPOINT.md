@@ -1,6 +1,8 @@
 ---
 type: meta
-tags: [cicd, database, frontend, infra, llm, testing]
+tags: [workflow]
+domain: workflow_meta
+domain_tags: ["testing"]
 ---
 
 # CHECKPOINT.md — [[STORY-87]] Workflow Integration Tests

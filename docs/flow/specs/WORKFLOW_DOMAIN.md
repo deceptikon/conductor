@@ -1,8 +1,10 @@
 ---
 type: domain
-tags: "[cicd, domain-root, entry-point, eval, frontend, llm, meta, retrieval, testing, workflow]"
+tags: [meta, workflow]
 version: 1.0
 created: 2026-06-15
+domain: workflow_meta
+domain_tags: []
 ---
 
 # Workflow Domain — Root Node

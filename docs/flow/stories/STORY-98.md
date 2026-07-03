@@ -7,9 +7,11 @@ updated: 2026-06-16
 id: STORY-98
 epic: "[[EPIC-15]]"
 title: Real-Vault Integration Testing (Flow Tests)
-tags: [e2e, flow, frontend, infra, integration, llm, observability, real-vault, testing]
+tags: [workflow]
 related: "[[EPIC-15]], [[STORY-95]], [[STORY-97]], [[STORY-99]]"
 depends_on: "[[STORY-95]], [[STORY-97]]"
+domain: workflow_meta
+domain_tags: ["story", "testing"]
 ---
 
 # STORY-98: Real-Vault Integration Testing (Flow Tests)

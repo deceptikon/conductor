@@ -7,8 +7,10 @@ updated: 2026-06-16
 id: STORY-94
 epic: "[[EPIC-15]]"
 title: Core Path Resolution (paths.py)
-tags: [bootstrap, cicd, database, frontend, infra, infrastructure, observability, paths, pult, testing]
+tags: [bootstrap, pult, workflow]
 related: "[[EPIC-15]], [[STORY-95]]"
+domain: workflow_meta
+domain_tags: ["story", "testing"]
 ---
 
 # STORY-94: Core Path Resolution (`paths.py`)

@@ -1,6 +1,6 @@
 ---
 type: spec
-tags: "[architecture, cicd, enforcement, frontend, infra, layers, llm, osi-model, testing, workflow]"
+tags: [architecture, workflow]
 version: 1.0
 created: 2026-06-15
 updated: 2026-06-15

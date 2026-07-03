@@ -1,9 +1,15 @@
+---
+domain: workflow_meta
+domain_tags: ["planning"]
+
 # STORY-008: TOML Per-Node Routing & Config for New Pipeline Nodes
 
 **Epic**: [Pre-Planning Storywriter & Contract Creation Pipeline](epic-storywriter-contract.md)
 **Type**: Technical Story
 
 ---
+> **Parent:** [[VAULT_DOMAINS]]
+
 
 As a **pipeline operator**,
 I want to control which worker and model back each new Storywriter and Contract
@@ -101,3 +107,4 @@ stronger models to drafting/contract nodes without touching Python source code.
 - STORY-001 (new `RunState` keys drive the need for config ceilings)
 - No other story — this is a prerequisite for stories 2–7 to call
   `cfg.worker_for(...)` without `KeyError`
+

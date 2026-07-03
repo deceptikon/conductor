@@ -1,3 +1,7 @@
+---
+domain: workflow_meta
+domain_tags: []
+
 # ADLAI Flow Analysis: Integration of Conductor + RVC into a Legal AI Product
 
 *Generated: 2026-06-28*
@@ -369,3 +373,4 @@ ADLAI is the proving ground for the Conductor+RVC stack. The integration has bee
 ---
 
 *End of Analysis*
+

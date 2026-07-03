@@ -1,6 +1,8 @@
 ---
 type: meta
-tags: [citation, llm]
+tags: [workflow]
+domain: workflow_meta
+domain_tags: []
 ---
 
 # CHECKPOINT_POSTMORTEM

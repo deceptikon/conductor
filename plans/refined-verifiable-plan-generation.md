@@ -1,3 +1,7 @@
+---
+domain: workflow_meta
+domain_tags: ["planning"]
+
 # Refined Plan: Verifiable Plan-Based Code Generation with Obsidian Vault Integration
 
 ## 1. Executive Summary
@@ -200,3 +204,4 @@ flowchart TD
 3. **Upgrade `qa_cmd`** from a single project-level command to a node-level harness invocation.
 4. **Add `reviewer` routing** in `conductor/projects/<name>.toml` if you want a different model for plan validation than for planning.
 5. **Enable read-only mode** on the planner worker to guarantee it never writes files during plan generation.
+

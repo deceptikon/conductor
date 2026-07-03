@@ -7,9 +7,11 @@ updated: 2026-06-16
 id: STORY-96
 epic: "[[EPIC-15]]"
 title: Pult Phase 2 — Structured Artifact Injection
-tags: [artifact, automation, cicd, frontend, infra, llm, observability, phase-gating, pult, template, testing]
+tags: [phase-gating, pult, workflow]
 related: "[[EPIC-15]], [[STORY-95]], [[STORY-99]], [[L3_PHASE_GATING]]"
 depends_on: "[[STORY-95]]"
+domain: workflow_meta
+domain_tags: ["story", "testing"]
 ---
 
 # STORY-96: Pult Phase 2 — Structured Artifact Injection

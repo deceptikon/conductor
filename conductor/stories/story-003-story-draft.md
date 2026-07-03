@@ -1,9 +1,15 @@
+---
+domain: workflow_meta
+domain_tags: ["planning"]
+
 # STORY-003: `story_draft` Node — Narrative Story Generation
 
 **Epic**: [Pre-Planning Storywriter & Contract Creation Pipeline](epic-storywriter-contract.md)
 **Type**: Functional Story
 
 ---
+> **Parent:** [[VAULT_DOMAINS]]
+
 
 As a **pipeline operator**,
 I want Conductor to automatically generate a well-structured user story from
@@ -82,3 +88,4 @@ human-readable requirement rather than an ad-hoc task string.
 - STORY-004 (defines `story_review_feedback` written back to state)
 - STORY-008 (TOML routing for `story_draft` worker)
 - STORY-009 (graph edge: `story_research → story_draft`)
+

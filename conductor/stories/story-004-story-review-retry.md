@@ -1,9 +1,15 @@
+---
+domain: workflow_meta
+domain_tags: ["planning"]
+
 # STORY-004: `story_review` Node — Validation, Retry Loop & HitL Escalation
 
 **Epic**: [Pre-Planning Storywriter & Contract Creation Pipeline](epic-storywriter-contract.md)
 **Type**: Functional Story
 
 ---
+> **Parent:** [[VAULT_DOMAINS]]
+
 
 As a **pipeline operator**,
 I want the drafted story to be automatically validated and iteratively improved
@@ -97,3 +103,4 @@ I remain in control when automation cannot self-correct.
 - STORY-008 (TOML routing for `story_review`; `max_story_retries` config)
 - STORY-009 (conditional edge: PASS → `rvc_link`, FAIL → `story_draft`,
   HitL → `interrupt()` + resume)
+

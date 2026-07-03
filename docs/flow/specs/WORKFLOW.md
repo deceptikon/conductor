@@ -1,8 +1,10 @@
 ---
 type: meta
-tags: "[artifacts, database, infra, llm, observability, session-ritual, sync, testing, workflow]"
+tags: [sync, workflow]
 version: 5.0
 updated: 2026-06-15
+domain: workflow_meta
+domain_tags: []
 ---
 
 # WORKFLOW.md — Session Ritual

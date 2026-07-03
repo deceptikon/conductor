@@ -4,8 +4,12 @@ status: Backlog
 priority: P1
 started: 2026-06-15
 id: STORY-87
-tags: "[cicd, citation, database, frontend, infra, llm, observability, review-queue, testing]"
+tags: [workflow]
+domain: workflow_meta
+domain_tags: []
 ---
+> **Parent:** [[VAULT_DOMAINS]]
+
 
 # STORY-87: Workflow Layered Architecture — OSI-Style Enforcement Model
 

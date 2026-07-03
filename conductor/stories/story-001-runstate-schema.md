@@ -1,9 +1,15 @@
+---
+domain: workflow_meta
+domain_tags: ["planning"]
+
 # STORY-001: Extend `RunState` with Story & Contract Lifecycle Fields
 
 **Epic**: [Pre-Planning Storywriter & Contract Creation Pipeline](epic-storywriter-contract.md)
 **Type**: Technical Story
 
 ---
+> **Parent:** [[VAULT_DOMAINS]]
+
 
 As a **pipeline developer**,
 I want to add the story and contract lifecycle fields to [`RunState`](../pipeline.py:60),
@@ -47,3 +53,4 @@ state ledger consistent with the existing checkpoint pattern.
 ## Dependencies
 
 None — this is the first story in the epic and has no upstream dependencies.
+

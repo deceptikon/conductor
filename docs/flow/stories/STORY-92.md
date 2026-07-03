@@ -5,8 +5,12 @@ priority: P1
 started: 2026-06-15
 id: STORY-92
 title: L3-MVP-1-SYNC-only-phase-prompt-generation
-tags: [citation, database, eval, frontend, infra, llm, testing]
+tags: [workflow]
+domain: workflow_meta
+domain_tags: ["story", "testing"]
 ---
+> **Parent:** [[VAULT_DOMAINS]]
+
 
 # STORY-92: L3 MVP-1: SYNC-only phase prompt generation
 

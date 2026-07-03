@@ -1,3 +1,7 @@
+---
+domain: workflow_meta
+domain_tags: []
+
 # Conductor — Recommendations
 
 ## Priority 1: RVC Context Bloat (trivial fix)
@@ -223,3 +227,4 @@ Add pytest tests under `tests/`:
 | **6** | Save prompts to file | **15 min** | **Medium** — makes debugging much easier |
 | **7** | Split AGENTS.md | 1 hour | Low — nice to have |
 | **8** | Unit tests | 2-3 days | Medium — foundational but not urgent |
+

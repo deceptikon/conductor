@@ -1,7 +1,11 @@
 ---
 id: STORY-87
-tags: [cicd, citation, frontend, infra, llm, testing]
+tags: [workflow]
+domain: workflow_meta
+domain_tags: ["testing"]
 ---
+> **Parent:** [[VAULT_DOMAINS]]
+
 
 # STORY-87 Phase Verification — Honest Proof
 

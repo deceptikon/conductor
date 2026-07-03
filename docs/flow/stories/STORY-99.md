@@ -7,9 +7,11 @@ updated: 2026-06-16
 id: STORY-99
 epic: "[[EPIC-15]]"
 title: Pult Phase 3 — Absorption (Deprecate Bash Bootstrap)
-tags: [absorption, bootstrap, cicd, deprecation, frontend, llm, observability, pult, refactor, routing, testing]
+tags: [bootstrap, pult, workflow]
 related: "[[EPIC-15]], [[STORY-96]], [[STORY-98]]"
 depends_on: "[[STORY-96]], [[STORY-98]]"
+domain: workflow_meta
+domain_tags: ["story", "testing"]
 ---
 
 # STORY-99: Pult Phase 3 — Absorption (Deprecate Bash Bootstrap)

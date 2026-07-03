@@ -1,3 +1,7 @@
+---
+domain: workflow_meta
+domain_tags: []
+
 # Conductor — Handover Note for Tomorrow Us
 
 ## Current State (2026-06-27)
@@ -77,3 +81,4 @@ The conductor harness is **working end-to-end** for the ADLAI project. A live te
 
 ---
 *Written by us, for us. Keep it honest.*
+

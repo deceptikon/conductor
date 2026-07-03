@@ -1,3 +1,7 @@
+---
+domain: workflow_meta
+domain_tags: ["planning"]
+
 # Overall Common Report: Conductor + RVC + ADLAI Flow Integration
 
 *Generated: 2026-06-28*
@@ -399,3 +403,4 @@ docs/flow/
 ---
 
 *End of Report*
+

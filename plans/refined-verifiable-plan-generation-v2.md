@@ -1,3 +1,7 @@
+---
+domain: workflow_meta
+domain_tags: ["planning"]
+
 # Refined Plan v2: Verifiable Plan-Based Code Generation
 
 ## 1. Design Principles (non-negotiable)
@@ -291,3 +295,4 @@ flowchart TD
 1. Should `Contract` support multiple types simultaneously (e.g., both `signature` and `json_schema`)? Or is one type strict enough?
 2. Should the human gate render the plan as a markdown table for readability, or is raw JSON acceptable for the PoC?
 3. What is the maximum plan size (node count) we expect? This affects whether we need to paginate the plan in the coder prompt.
+

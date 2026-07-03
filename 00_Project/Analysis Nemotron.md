@@ -1,3 +1,7 @@
+---
+domain: workflow_meta
+domain_tags: []
+
 # General Prompt Structure for Agentic Flow Modes
 
 Here's a modular, reusable prompt template structure that can be adapted for each mode while minimizing duplication.

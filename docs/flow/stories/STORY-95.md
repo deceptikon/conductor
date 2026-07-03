@@ -7,9 +7,11 @@ updated: 2026-06-16
 id: STORY-95
 epic: "[[EPIC-15]]"
 title: Pult Phase 1 — Python Wrapper and Error Classifier
-tags: [cicd, error-classifier, frontend, infra, llm, logging, observability, pult, routing, testing, workflow]
+tags: [pult, workflow]
 related: "[[EPIC-15]], [[STORY-94]], [[STORY-96]], [[STORY-97]], [[STORY-98]]"
 depends_on: "[[STORY-94]]"
+domain: workflow_meta
+domain_tags: ["story", "testing"]
 ---
 
 # STORY-95: Pult Phase 1 — Python Wrapper & Error Classifier

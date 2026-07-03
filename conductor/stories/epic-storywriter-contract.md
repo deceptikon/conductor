@@ -1,3 +1,7 @@
+---
+domain: workflow_meta
+domain_tags: ["planning"]
+
 # EPIC: Pre-Planning Storywriter & Contract Creation Pipeline
 
 ## Summary
@@ -42,7 +46,9 @@ plan ──► review ──► approve ──► act ──► qa ──► com
 ## Known Design Issues in the Original Proposal (addressed in child stories)
 
 | Issue | Location | Resolution |
-|-------|----------|------------|
+|---
+> **Domain:** [[VAULT_DOMAINS]] #conductor
+----|----------|------------|
 | `story_draft` used as **both** node name and `RunState` key | Proposal §3 | `RunState` key renamed to `story_text`; node name stays `story_draft` |
 | `contract` key overloading — static AGENTS.md vs. dynamic output | Proposal §3 | `contract_proposal` stored separately; merged into `contract` only after `contract_validate` passes (Story 7) |
 | `rvc_link` write capability unspecified | Proposal §1 | Explicit acceptance criteria on `rvc create` CLI + output format (Story 5) |
@@ -70,3 +76,4 @@ plan ──► review ──► approve ──► act ──► qa ──► com
 3. `state["contract"]` received by `plan_node` reflects the dynamically created contract when the Storywriter path ran, and still falls back to AGENTS.md when it did not.
 4. No regression in any existing pipeline node (`plan`, `review`, `approve`, `act`, `qa`, `commit`).
 5. All new nodes emit structured `history` events consistent with the existing [`_log()`](../pipeline.py:89) pattern.
+

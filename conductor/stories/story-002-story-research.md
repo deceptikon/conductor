@@ -1,9 +1,15 @@
+---
+domain: workflow_meta
+domain_tags: ["planning"]
+
 # STORY-002: `story_research` Node — Codebase & RVC Impact Analysis
 
 **Epic**: [Pre-Planning Storywriter & Contract Creation Pipeline](epic-storywriter-contract.md)
 **Type**: Functional Story
 
 ---
+> **Parent:** [[VAULT_DOMAINS]]
+
 
 As a **pipeline operator submitting a task to Conductor**,
 I want the pipeline to automatically scan the codebase and any existing RVC
@@ -73,3 +79,4 @@ and do not contradict existing architecture decisions.
 - STORY-001 (`story_research_ctx` key in `RunState`)
 - STORY-008 (TOML routing for `story_research` worker)
 - STORY-009 (graph wiring to place this node at `START`)
+

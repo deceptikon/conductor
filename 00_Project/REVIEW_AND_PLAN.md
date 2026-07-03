@@ -1,3 +1,7 @@
+---
+domain: workflow_meta
+domain_tags: []
+
 # Architecture Review: RVC Protocol + Conductor Harness
 
 *Review date: 2026-06-28*
@@ -194,3 +198,4 @@ This is a **closed loop** from idea to committed code with human oversight at ex
 **On the Combination:** Together, RVC + Conductor form a credible "AI software engineer" loop. The weakest link is PlanReviser — if QA fails 3 times, a human has to intervene. Fix that, and you have a system that can plan, execute, test, diagnose, and retry with only one human checkpoint. That's genuinely impressive for a ~1,000-line Python harness.
 
 **Bottom line:** Both projects are 80% solutions to 100% problems. The remaining 20% is the hard part (tests, edge cases, failure recovery), but the foundation is solid enough to justify the investment.
+

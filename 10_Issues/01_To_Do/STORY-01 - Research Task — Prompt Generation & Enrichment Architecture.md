@@ -3,9 +3,9 @@ type: story
 status: To Do
 priority: Medium
 started: 2026-06-30
+domain: workflow_meta
+domain_tags: ["planning", "story"]
 ---
-
-# STORY-01: Research Task — Prompt Generation & Enrichment Architecture
 
 ## Context
 

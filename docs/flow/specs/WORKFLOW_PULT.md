@@ -2,7 +2,7 @@
 type: architecture
 domain: workflow
 status: draft
-tags: [cicd, citation, cli, data-quality, database, frontend, infra, ingestion, llm, observability, orchestrator, pult, routing, s6, testing, vertical, workflow]
+tags: [pult, workflow]
 created: 2026-06-16
 related: "[[WORKFLOW_DOMAIN]], [[WORKFLOW]], [[L0_MODEL]], [[L5_BOOTSTRAP]]"
 ---

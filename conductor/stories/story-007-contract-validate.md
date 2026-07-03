@@ -1,9 +1,15 @@
+---
+domain: workflow_meta
+domain_tags: ["planning"]
+
 # STORY-007: `contract_validate` Node — DoD Coverage Check & Contract Merge
 
 **Epic**: [Pre-Planning Storywriter & Contract Creation Pipeline](epic-storywriter-contract.md)
 **Type**: Functional Story
 
 ---
+> **Parent:** [[VAULT_DOMAINS]]
+
 
 As a **pipeline operator**,
 I want the generated contract to be automatically checked against the story's
@@ -101,3 +107,4 @@ silently omits a required DoD item.
 - STORY-008 (TOML routing for `contract_validate`; `max_contract_retries` config)
 - STORY-009 (conditional edge: PASS → `plan`, FAIL → `contract_propose`,
   `contract_retries ≥ 3` → `interrupt()`)
+

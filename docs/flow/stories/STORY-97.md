@@ -7,8 +7,10 @@ updated: 2026-06-16
 id: STORY-97
 epic: "[[EPIC-15]]"
 title: Fix ACT/WRAP Prompt Gates in session_bootstrap.sh
-tags: [act, bootstrap, cicd, citation, frontend, hard-stop, infra, llm, observability, phase-gating, prompt, testing, wrap]
+tags: [bootstrap, phase-gating, workflow]
 related: "[[EPIC-15]], [[STORY-98]], [[L3_PHASE_GATING]], [[CHECKPOINT_POSTMORTEM]]"
+domain: workflow_meta
+domain_tags: ["story", "testing"]
 ---
 
 # STORY-97: Fix ACT/WRAP Prompt Gates in `session_bootstrap.sh`

@@ -79,7 +79,7 @@ When `--issue STORY-XX` is passed to `conductor run`, the pipeline automatically
 
 - There are **no unit tests** in this repo.
 - `conductor selftest <project>` is the only built-in verification.
-- `test_fixtures/` contains a [[teamflow/conductor/test_fixtures/fake-repo/AGENTS|fake-repo/AGENTS.md]] and `qa-pass.sh` / `qa-fail.sh` shells for manual QA gate testing.
+- `test_fixtures/` contains a [[conductor/test_fixtures/fake-repo/AGENTS|fake-repo/AGENTS.md]] and `qa-pass.sh` / `qa-fail.sh` shells for manual QA gate testing.
 
 ## Known Static Issues (do not re-introduce)
 
@@ -104,7 +104,7 @@ When `--issue STORY-XX` is passed to `conductor run`, the pipeline automatically
 - [[conductor/00_Project/HANDOVER]]
 - [[conductor/00_Project/OVERALL_COMMON_REPORT]]
 - [[conductor/docs/flow/FLOW_DOCS_INDEX]]
-- [[teamflow/conductor/conductor/stories/epic-gate-storywriter-contract|Epic Gate — Pre-Planning Storywriter & Contract Creation Pipeline]]
+- [[conductor/conductor/stories/epic-gate-storywriter-contract|Epic Gate — Pre-Planning Storywriter & Contract Creation Pipeline]]
 - [[conductor/2026-07-01]]
 - [[conductor/conductor/plans/STORY-02-manual-execution-ritual]]
 - [[conductor/plans/refined-verifiable-plan-generation]]

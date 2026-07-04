@@ -52,11 +52,12 @@ def test_session_bootstrap_fails_on_unknown_story(tmp_path):
         capture_output=True, text=True, timeout=15, check=False,
         cwd=str(TEAMFLOW),
     )
-    # RED: currently bootstrap silently produces empty RVC context.
-    # Expected: exit 1 + "GATE_FAIL" or similar marker.
+    # The script currently exits non-zero (because the cd to REPO fails),
+    # but not for the right reason (no G1 gate validation).
+    # When STORY-95 implements proper G1 gates, the script will fail with
+    # a structured error message instead of a cd failure.
     assert proc.returncode != 0, (
-        "RED: bootstrap exits 0 on missing issue — silent failure. "
-        "See G1 gate in ASSEMBLY.md."
+        "bootstrap should exit non-zero when issue is missing"
     )
 
 

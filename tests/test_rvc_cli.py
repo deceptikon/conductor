@@ -46,7 +46,7 @@ def test_find_vault_root_marker_file(tmp_vault):
     reason="RED: walk-up from /tmp hits stale sibling vaults from earlier "
            "pytest runs. `find_vault_root` needs a stop-at-root argument "
            "or the function should walk DOWN rather than UP.",
-    strict=False,
+    strict=True,
 )
 def test_find_vault_root_returns_none_for_non_vault(tmp_path):
     (tmp_path / "random").mkdir()

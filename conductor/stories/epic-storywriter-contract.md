@@ -59,15 +59,15 @@ plan ──► review ──► approve ──► act ──► qa ──► com
 
 | ID | Title | Type |
 |----|-------|------|
-| [STORY-001](story-001-runstate-schema.md) | Extend `RunState` with story & contract lifecycle fields | Technical |
-| [STORY-002](story-002-story-research.md) | `story_research` node: codebase & RVC impact analysis | Functional |
-| [STORY-003](story-003-story-draft.md) | `story_draft` node: narrative story generation | Functional |
-| [STORY-004](story-004-story-review-retry.md) | `story_review` node: validation, retry loop & HitL escalation | Functional |
-| [STORY-005](story-005-rvc-link.md) | `rvc_link` node: create & link RVC vault story entry | Functional |
-| [STORY-006](story-006-contract-propose.md) | `contract_propose` node: story-to-technical-contract generation | Functional |
-| [STORY-007](story-007-contract-validate.md) | `contract_validate` node: DoD coverage check & contract merge | Functional |
-| [STORY-008](story-008-toml-routing.md) | TOML per-node routing for all new pipeline nodes | Technical |
-| [STORY-009](story-009-graph-rewiring.md) | `build_graph` rewiring: insert subflows before `plan` | Technical |
+| [STORY-015](story-015-runstate-schema.md) | Extend `RunState` with story & contract lifecycle fields | Technical |
+| [STORY-016](story-016-story-research.md) | `story_research` node: codebase & RVC impact analysis | Functional |
+| [STORY-017](story-017-story-draft.md) | `story_draft` node: narrative story generation | Functional |
+| [STORY-018](story-018-story-review-retry.md) | `story_review` node: validation, retry loop & HitL escalation | Functional |
+| [STORY-019](story-019-rvc-link.md) | `rvc_link` node: create & link RVC vault story entry | Functional |
+| [STORY-020](story-020-contract-propose.md) | `contract_propose` node: story-to-technical-contract generation | Functional |
+| [STORY-021](story-021-contract-validate.md) | `contract_validate` node: DoD coverage check & contract merge | Functional |
+| [STORY-022](story-022-toml-routing.md) | TOML per-node routing for all new pipeline nodes | Technical |
+| [STORY-023](story-023-graph-rewiring.md) | `build_graph` rewiring: insert subflows before `plan` | Technical |
 
 ## Epic Gate
 

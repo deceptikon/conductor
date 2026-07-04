@@ -21,8 +21,8 @@ domain_tags: []
 ┌─────────────────────────────────────────┐
 │ WORKFLOW DOMAIN (meta-project)          │
 │                                         │
-│  ~/Q/conductor          L4 outer ring   │
-│  ~/Q/vault-protocol     L2 artifacts    │
+│  ~/X/TEAMFLOW/conductor          L4 outer ring   │
+│  ~/X/TEAMFLOW/RVC     L2 artifacts    │
 │  session_bootstrap.sh   L5 bootstrap    │
 │  qwen CLI               L0 tooling      │
 │  opencode CLI           L0 tooling      │
@@ -65,8 +65,8 @@ constrains the one below. The critical gap is Layer 3 (Phase Gating).
 | Bootstrap Script | `session_bootstrap.sh` |
 | Qwen CLI | `qwen` tooling |
 | OpenCode CLI | `opencode` tooling |
-| Conductor | `~/Q/conductor` |
-| Vault Protocol | `~/Q/vault-protocol` |
+| Conductor | `~/X/TEAMFLOW/conductor` |
+| Vault Protocol | `~/X/TEAMFLOW/RVC` |
 | Phase Gating | [[L3_PHASE_GATING]] (SYNC→ENGAGE built) |
 | Integration Test Epic | [[EPIC_WORKFLOW_INTEGRATION_TESTS]] |
 

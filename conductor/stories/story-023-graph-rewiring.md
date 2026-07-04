@@ -2,7 +2,7 @@
 domain: workflow_meta
 domain_tags: ["planning"]
 
-# STORY-009: `build_graph` Rewiring — Insert Subflows Before `plan`
+# STORY-023: `build_graph` Rewiring — Insert Subflows Before `plan`
 
 **Epic**: [Pre-Planning Storywriter & Contract Creation Pipeline](epic-storywriter-contract.md)
 **Type**: Technical Story
@@ -129,7 +129,7 @@ with no regressions in the existing post-planning nodes.
 
 ## Dependencies
 
-- STORY-001 (all new `RunState` keys, including `storywriter_mode`)
-- STORY-002 through STORY-007 (all node functions must exist before wiring)
-- STORY-008 (`cfg.max_story_retries`, `cfg.max_contract_retries` used by routers)
+- STORY-015 (all new `RunState` keys, including `storywriter_mode`)
+- STORY-016 through STORY-021 (all node functions must exist before wiring)
+- STORY-022 (`cfg.max_story_retries`, `cfg.max_contract_retries` used by routers)
 

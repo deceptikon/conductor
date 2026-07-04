@@ -28,8 +28,8 @@ This report synthesizes findings from three interdependent projects:
 
 | System | Role | Location | Maturity |
 |--------|------|----------|----------|
-| **Conductor** | L4 LangGraph orchestration harness | `~/Q/conductor` | Beta — core pipeline works, PlanReviser stub |
-| **RVC Protocol** | L2 vault/artifact management CLI | `~/Q/vault-protocol` | Production-ready with security debt |
+| **Conductor** | L4 LangGraph orchestration harness | `~/X/TEAMFLOW/conductor` | Beta — core pipeline works, PlanReviser stub |
+| **RVC Protocol** | L2 vault/artifact management CLI | `~/X/TEAMFLOW/RVC` | Production-ready with security debt |
 | **ADLAI** | Target product (legal AI RAG) + L3/L5 flow integration | `~/Documents/ADLAI` | Active dev, 103 tests, flow layer being hardened |
 
 **The Big Picture:** ADLAI is the first real-world consumer of the Conductor+RVC stack. The integration has revealed 6 systemic workflow fragilities (documented in `CHECKPOINT_POSTMORTEM.md`) that span all three systems. Fixing them requires coordinated changes across the entire stack.
@@ -40,7 +40,7 @@ This report synthesizes findings from three interdependent projects:
 
 ## 2. The Three Systems
 
-### 2.1 Conductor (`~/Q/conductor`)
+### 2.1 Conductor (`~/X/TEAMFLOW/conductor`)
 
 **What it does:** Model-agnostic agent orchestration via LangGraph. Pipeline: `plan → review → approve → act → qa → plan_reviser → commit`.
 
@@ -55,7 +55,7 @@ This report synthesizes findings from three interdependent projects:
 
 **Files:** `pipeline.py`, `workers.py`, `schema.py`, `projects_config.py`, `__main__.py`
 
-### 2.2 RVC Protocol (`~/Q/vault-protocol`)
+### 2.2 RVC Protocol (`~/X/TEAMFLOW/RVC`)
 
 **What it does:** Local-first, Obsidian-native issue tracking. Markdown + YAML frontmatter + folder-based status lanes.
 
@@ -91,7 +91,7 @@ ADLAI's workflow team developed a 6-layer enforcement model (documented in `WORK
 
 ```
 L5 — Bootstrap    session_bootstrap.sh    ✅ BUILT
-L4 — Conductor    Plan→Act→QA→Commit       ✅ BUILT (~/Q/conductor)
+L4 — Conductor    Plan→Act→QA→Commit       ✅ BUILT (~/X/TEAMFLOW/conductor)
 L3 — Phase Gating SYNC→ENGAGE→ACT→WRAP     🟡 PARTIAL (SYNC/ENGAGE done, ACT/WRAP broken)
 L2 — Artifacts    STATE.json, DECISIONS.md  ✅ BUILT
 L1 — Tool Sandbox Permissions per phase     ⚠️ PARTIAL
@@ -315,7 +315,7 @@ REPO_ROOT = Path(__file__).parent.parent  # breaks when run from unexpected cwd
 
 ## 7. Epics and Stories Registry
 
-### 7.1 Conductor Project (`~/Q/conductor`)
+### 7.1 Conductor Project (`~/X/TEAMFLOW/conductor`)
 
 | ID | Title | Status | Priority |
 |----|-------|--------|----------|
@@ -326,7 +326,7 @@ REPO_ROOT = Path(__file__).parent.parent  # breaks when run from unexpected cwd
 | STORY-011 | Parallel DAG Execution | To Do | High |
 | STORY-012 | RVC Context Caching | To Do | Medium |
 
-### 7.2 RVC Protocol (`~/Q/vault-protocol`)
+### 7.2 RVC Protocol (`~/X/TEAMFLOW/RVC`)
 
 | ID | Title | Status | Priority |
 |----|-------|--------|----------|
@@ -355,7 +355,7 @@ REPO_ROOT = Path(__file__).parent.parent  # breaks when run from unexpected cwd
 
 ## 8. Appendix: File Manifest
 
-All flow-related files have been consolidated into `~/Q/conductor/docs/flow/`:
+All flow-related files have been consolidated into `~/X/TEAMFLOW/conductor/docs/flow/`:
 
 ```
 docs/flow/
@@ -398,7 +398,7 @@ docs/flow/
 
 4. **Do not expand scope beyond EPIC-15 until it closes.** The 6 child stories (94-99) form a strict dependency graph. Attempting to add features (e.g., conductor L3 sub-graph, graph DB backend) before the basics work is how the current mess accumulated.
 
-5. **Consider unifying RVC and Conductor vaults.** Currently there are two vaults: `~/Q/vault-protocol/rvc-vault` (meta-project) and `~/Documents/ADLAI/adlai-vault` (product). The flow docs live in ADLAI vault but conceptually belong to the meta-project. A single unified vault with domain tags (`#meta`, `#adlai`) might reduce cognitive overhead.
+5. **Consider unifying RVC and Conductor vaults.** Currently there are two vaults: `~/X/TEAMFLOW/RVC/rvc-vault` (meta-project) and `~/Documents/ADLAI/adlai-vault` (product). The flow docs live in ADLAI vault but conceptually belong to the meta-project. A single unified vault with domain tags (`#meta`, `#adlai`) might reduce cognitive overhead.
 
 ---
 

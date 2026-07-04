@@ -2,7 +2,7 @@
 domain: workflow_meta
 domain_tags: ["planning"]
 
-# STORY-002: `story_research` Node — Codebase & RVC Impact Analysis
+# STORY-016: `story_research` Node — Codebase & RVC Impact Analysis
 
 **Epic**: [Pre-Planning Storywriter & Contract Creation Pipeline](epic-storywriter-contract.md)
 **Type**: Functional Story
@@ -76,7 +76,7 @@ and do not contradict existing architecture decisions.
 
 ## Dependencies
 
-- STORY-001 (`story_research_ctx` key in `RunState`)
-- STORY-008 (TOML routing for `story_research` worker)
-- STORY-009 (graph wiring to place this node at `START`)
+- STORY-015 (`story_research_ctx` key in `RunState`)
+- STORY-022 (TOML routing for `story_research` worker)
+- STORY-023 (graph wiring to place this node at `START`)
 

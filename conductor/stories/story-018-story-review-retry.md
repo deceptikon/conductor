@@ -2,7 +2,7 @@
 domain: workflow_meta
 domain_tags: ["planning"]
 
-# STORY-004: `story_review` Node — Validation, Retry Loop & HitL Escalation
+# STORY-018: `story_review` Node — Validation, Retry Loop & HitL Escalation
 
 **Epic**: [Pre-Planning Storywriter & Contract Creation Pipeline](epic-storywriter-contract.md)
 **Type**: Functional Story
@@ -97,10 +97,10 @@ I remain in control when automation cannot self-correct.
 
 ## Dependencies
 
-- STORY-001 (`story_text`, `story_retries`, `story_finalized`, +
+- STORY-015 (`story_text`, `story_retries`, `story_finalized`, +
   `story_review_feedback` added here)
-- STORY-003 (`story_text` populated before this node runs)
-- STORY-008 (TOML routing for `story_review`; `max_story_retries` config)
-- STORY-009 (conditional edge: PASS → `rvc_link`, FAIL → `story_draft`,
+- STORY-017 (`story_text` populated before this node runs)
+- STORY-022 (TOML routing for `story_review`; `max_story_retries` config)
+- STORY-023 (conditional edge: PASS → `rvc_link`, FAIL → `story_draft`,
   HitL → `interrupt()` + resume)
 

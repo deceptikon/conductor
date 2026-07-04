@@ -2,7 +2,7 @@
 domain: workflow_meta
 domain_tags: ["planning"]
 
-# STORY-007: `contract_validate` Node — DoD Coverage Check & Contract Merge
+# STORY-021: `contract_validate` Node — DoD Coverage Check & Contract Merge
 
 **Epic**: [Pre-Planning Storywriter & Contract Creation Pipeline](epic-storywriter-contract.md)
 **Type**: Functional Story
@@ -102,9 +102,9 @@ silently omits a required DoD item.
 
 ## Dependencies
 
-- STORY-001 (`contract_valid`, `contract_gaps`, `contract_retries` keys)
-- STORY-006 (`contract_proposal` populated before this node runs)
-- STORY-008 (TOML routing for `contract_validate`; `max_contract_retries` config)
-- STORY-009 (conditional edge: PASS → `plan`, FAIL → `contract_propose`,
+- STORY-015 (`contract_valid`, `contract_gaps`, `contract_retries` keys)
+- STORY-020 (`contract_proposal` populated before this node runs)
+- STORY-022 (TOML routing for `contract_validate`; `max_contract_retries` config)
+- STORY-023 (conditional edge: PASS → `plan`, FAIL → `contract_propose`,
   `contract_retries ≥ 3` → `interrupt()`)
 

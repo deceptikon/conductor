@@ -2,7 +2,7 @@
 domain: workflow_meta
 domain_tags: ["planning"]
 
-# STORY-005: `rvc_link` Node — Create & Link RVC Vault Story Entry
+# STORY-019: `rvc_link` Node — Create & Link RVC Vault Story Entry
 
 **Epic**: [Pre-Planning Storywriter & Contract Creation Pipeline](epic-storywriter-contract.md)
 **Type**: Functional Story
@@ -80,7 +80,7 @@ linked requirement record in the project vault without manual vault editing.
 
 ## Dependencies
 
-- STORY-001 (`rvc_story_id` key in `RunState`)
-- STORY-004 (`story_finalized = True` gates entry to this node)
-- STORY-009 (graph edge: `story_review` PASS → `rvc_link`)
+- STORY-015 (`rvc_story_id` key in `RunState`)
+- STORY-018 (`story_finalized = True` gates entry to this node)
+- STORY-023 (graph edge: `story_review` PASS → `rvc_link`)
 

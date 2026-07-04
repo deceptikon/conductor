@@ -339,7 +339,7 @@ Trying to build conductor L3 sub-graphs, graph DB backends, or parallel DAG exec
 
 ### 6.3 Migrate Flow Docs to Conductor Vault
 
-The flow-related specs and stories (WORKFLOW_*.md, EPIC-15, STORY-87, STORY-92-99) conceptually belong to the meta-project (Conductor+RVC), not the product (ADLAI). They have been copied to `~/Q/conductor/docs/flow/` in this report's file manifest.
+The flow-related specs and stories (WORKFLOW_*.md, EPIC-15, STORY-87, STORY-92-99) conceptually belong to the meta-project (Conductor+RVC), not the product (ADLAI). They have been copied to `~/X/TEAMFLOW/conductor/docs/flow/` in this report's file manifest.
 
 **Suggested next step:** Create a `conductor-vault` (or rename `rvc-vault` to `conductor-vault`) and move these stories there. ADLAI vault should contain only ADLAI business logic (retrieval, citation, corpus, evaluation, verticals).
 

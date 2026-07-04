@@ -2,7 +2,7 @@
 domain: workflow_meta
 domain_tags: ["planning"]
 
-# STORY-008: TOML Per-Node Routing & Config for New Pipeline Nodes
+# STORY-022: TOML Per-Node Routing & Config for New Pipeline Nodes
 
 **Epic**: [Pre-Planning Storywriter & Contract Creation Pipeline](epic-storywriter-contract.md)
 **Type**: Technical Story
@@ -104,7 +104,7 @@ stronger models to drafting/contract nodes without touching Python source code.
 
 ## Dependencies
 
-- STORY-001 (new `RunState` keys drive the need for config ceilings)
-- No other story — this is a prerequisite for stories 2–7 to call
+- STORY-015 (new `RunState` keys drive the need for config ceilings)
+- No other story — this is a prerequisite for stories 16–21 to call
   `cfg.worker_for(...)` without `KeyError`
 

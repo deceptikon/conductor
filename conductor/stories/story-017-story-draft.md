@@ -2,7 +2,7 @@
 domain: workflow_meta
 domain_tags: ["planning"]
 
-# STORY-003: `story_draft` Node — Narrative Story Generation
+# STORY-017: `story_draft` Node — Narrative Story Generation
 
 **Epic**: [Pre-Planning Storywriter & Contract Creation Pipeline](epic-storywriter-contract.md)
 **Type**: Functional Story
@@ -83,9 +83,9 @@ human-readable requirement rather than an ad-hoc task string.
 
 ## Dependencies
 
-- STORY-001 (`story_text`, `story_retries` keys)
-- STORY-002 (`story_research_ctx` populated before this node runs)
-- STORY-004 (defines `story_review_feedback` written back to state)
-- STORY-008 (TOML routing for `story_draft` worker)
-- STORY-009 (graph edge: `story_research → story_draft`)
+- STORY-015 (`story_text`, `story_retries` keys)
+- STORY-016 (`story_research_ctx` populated before this node runs)
+- STORY-018 (defines `story_review_feedback` written back to state)
+- STORY-022 (TOML routing for `story_draft` worker)
+- STORY-023 (graph edge: `story_research → story_draft`)
 

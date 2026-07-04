@@ -114,8 +114,8 @@ This model is a **root node** in the ADLAI knowledge graph. Related branches:
 - [[STORY-87]] — detailed analysis of bottlenecks mapped to layers
 - [[WORKFLOW]] — the 4-phase ritual (what the agent reads)
 - `session_bootstrap.sh` — the L5 bootstrap implementation
-- `~/Q/conductor` — the L4 LangGraph orchestration engine
-- `~/Q/vault-protocol` — the L2 artifact management CLI
+- `~/X/TEAMFLOW/conductor` — the L4 LangGraph orchestration engine
+- `~/X/TEAMFLOW/RVC` — the L2 artifact management CLI
 
 When diving deeper into any sub-derivative, return here to re-anchor in the
 full model. Do not mix contexts — each layer is a separate concern.

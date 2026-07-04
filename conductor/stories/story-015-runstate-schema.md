@@ -2,7 +2,7 @@
 domain: workflow_meta
 domain_tags: ["planning"]
 
-# STORY-001: Extend `RunState` with Story & Contract Lifecycle Fields
+# STORY-015: Extend `RunState` with Story & Contract Lifecycle Fields
 
 **Epic**: [Pre-Planning Storywriter & Contract Creation Pipeline](epic-storywriter-contract.md)
 **Type**: Technical Story

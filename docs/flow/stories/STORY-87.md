@@ -17,7 +17,7 @@ domain_tags: []
 > tracks the evolution and integration of the **Workflow Engine** (a sibling/meta-project)
 > into the ADLAI codebase.
 >
-> - **Meta-Project (The Factory):** `~/Q/conductor` + `~/Q/vault-protocol`
+> - **Meta-Project (The Factory):** `~/X/TEAMFLOW/conductor` + `~/X/TEAMFLOW/RVC`
 > - **Target Project (The Product):** `~/Documents/ADLAI`
 > - **Integration Point:** `adlai-vault/00_Project/session_bootstrap.sh` & `WORKFLOW.md`
 
@@ -80,7 +80,7 @@ A layer cannot be skipped — the lower layer never receives the data to skip it
 │   Hard LangGraph nodes, checkpointed, human       │
 │   interrupt at Approve. Stateless workers.        │
 │   Protocol: node_name + state → Layer 3           │
-│   STATUS: ✅ BUILT (~/Q/conductor)                 │
+│   STATUS: ✅ BUILT (~/X/TEAMFLOW/conductor)                 │
 ├──────────────────────────────────────────────────┤
 │ LAYER 3 — Phase Gating (inner enforcement ring)   │
 │   SYNC → ENGAGE → ACT → WRAP                      │
@@ -241,7 +241,7 @@ INVOCATION 4 (WRAP):
 
 ### Phase 3: Conductor integration (optional)
 
-8. **Wire `--phase` flow into `~/Q/conductor` ActNode as sub-graph**
+8. **Wire `--phase` flow into `~/X/TEAMFLOW/conductor` ActNode as sub-graph**
 
 ---
 

@@ -32,7 +32,7 @@ The conductor harness is **working end-to-end** for the ADLAI project. A live te
 
 ### RVC Integration
 
-- `rvc` is resolved from PATH, fallback to `~/.local/bin/rvc` (symlinked to `~/Q/vault-protocol/rvc-cli.py`).
+- `rvc` is resolved from PATH, fallback to `~/.local/bin/rvc` (symlinked to `~/X/TEAMFLOW/RVC/rvc-cli.py`).
 - When `--issue STORY-XX` is passed, `_rvc_context()` fetches the issue context and prepends it to both **plan** and **act** prompts.
 - If `rvc` fails, the pipeline logs a warning and continues (graceful degradation).
 

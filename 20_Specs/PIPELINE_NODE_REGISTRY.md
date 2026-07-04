@@ -18,6 +18,8 @@ related:
 
 Single source of truth mapping every defined conductor node to its pipeline position, routing key, and connection status.
 
+![[Dry-Run Output Sample]]
+Another [[dry-run sample as a whole piece]]
 ## Node Map
 
 | Node | Routing Key | Pipeline Position | Status | Connected To | Notes |

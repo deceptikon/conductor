@@ -96,6 +96,10 @@ On QA failure it loops `act` → `qa` up to `max_qa_retries` (default 2), then r
 - `create_worker(agentic, model=None, ...)` accepts `model` to pin specific LLM per node.
 - Use `selftest` to dry-run graph compilation without invoking real workers.
 
+## Pipeline Node Registry
+
+The [[../20_Specs/PIPELINE_NODE_REGISTRY.md|PIPELINE_NODE_REGISTRY]] is the single source of truth mapping every defined conductor node to its pipeline position, routing key, and connection status. All node implementations should be verified against this registry.
+
 ## RVC Integration
 
 When `--issue STORY-XX` is passed, the pipeline fetches the issue story and injects it into **plan** and **act** prompts.

@@ -49,6 +49,12 @@ new `adlai-vault/10_Issues/00_Backlog/STORY-TEST-FLOW.md` specifically for
 E2E testing — it will never move to Active/Done and will be reset by the
 test teardown.
 
+## Prerequisites
+
+- [[STORY-95]] (Pult wrapper) must be **Done**
+- [[STORY-97]] (prompt gates) must be **Done**
+- [[STORY-010]] (Unit Test Foundation) must be **Done** — provides pytest fixtures, mock workers, temp dirs
+
 ## Acceptance Criteria
 
 - [ ] `backend/tests/integration/test_flow_real_vault.py` exists
@@ -65,11 +71,36 @@ test teardown.
   - Asserts: exit 0, stdout contains `## PHASE: ENGAGE`
   - Asserts: ENGAGE gate passes (no "VALIDATION FAILED" in output)
   - Teardown: restores fixture story to pristine state
+- [ ] **Flow Test 3 — Full pipeline with bulk, pult, and prompt_builder nodes (once wired):**
+  - Runs a synthetic story through the conductor pipeline
+  - Asserts: `bulk_node` executes mechanical tasks when plan contains `mechanical` tags
+  - Asserts: `pult_node` publishes artifacts to FLOW vault after commit
+  - Asserts: `prompt_builder_service` enriches plan node prompts
+  - **Note:** This test is gated behind feature flags; skipped if nodes are not wired
+- [ ] **G4 gate:** QA phase must pass (exit 0) before commit_node executes in pipeline tests
+- [ ] **G3 gate:** integration tests verify phase artifact gates block execution when predecessor artifacts are missing or pending
 - [ ] Tests are skipped (not failed) if `rvc` is not in PATH (use `pytest.mark.skipif`)
 - [ ] Tests are skipped if `adlai-vault/` is not found at the expected path
 - [ ] Tests are marked `@pytest.mark.integration` and excluded from the unit test gate (unit gate runs `backend/tests/unit` only)
 - [ ] Teardown is implemented with `pytest` fixture cleanup — no manual cleanup required after a failed run
 - [ ] Tests pass: `uv run pytest backend/tests/integration/test_flow_real_vault.py -v`
+
+## Edge Cases & Error Scenarios
+
+| Scenario | Expected Behaviour |
+|----------|-------------------|
+| Fixture story file is modified by a previous failed test run | Teardown fixture cleans up before test starts (autouse fixture with pre-test cleanup) |
+| `rvc` is available but `rvc context` returns empty | Test skips with `pytest.skip("rvc context empty — vault may be unconfigured")` |
+| Git working tree has uncommitted changes from previous runs | Test logs warning but does not fail (tests are read-only except for fixture story) |
+| Conductor pipeline is not available (STORY-023 not Done) | Flow Test 3 is skipped via `@pytest.mark.skipif` checking for `bulk_node` in `build_graph` |
+| Real vault has 1000+ issues | Tests must complete in <30s; use specific fixture story, not vault scan |
+
+## Non-Functional Requirements
+
+- **Isolation:** Tests must not modify real vault issues (only the fixture story)
+- **Performance:** Full test suite must complete in <60s
+- **CI Compatibility:** Tests are skipped (not failed) when rvc/vault are unavailable
+- **Observability:** Every test run produces a JSON log entry in `LOGS_DIR/integration_tests/` with pass/fail/skip status
 
 ## Fixture Story Template
 

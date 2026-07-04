@@ -59,6 +59,9 @@ writes the blank template immediately after the prompt is generated.
 - [ ] Injection locates the `## L3 Artifacts` section in the story file and appends below it (creating the section if missing)
 - [ ] `Pult.run()` accepts optional `inject_template: bool = False` parameter; when True, calls `ArtifactInjector.inject()` after generating the prompt
 - [ ] CLI flag `--inject-template` maps to `inject_template=True`
+- [ ] **Implement artifact publishing to FLOW vault with cross-vault link resolution** (matching dream flow `pult_node` behaviour): after WRAP phase, publish final artifacts to `FLOW/artifacts/` with resolved cross-vault wikilinks
+- [ ] **G3 gate:** verify predecessor phase artifact exists with `status=ready` before injecting next phase template; fail with `GATE_FAIL` classification + structured log if not
+- [ ] **G2 gate:** validate injected artifact template has all required fields before writing to story file; fail with `BOOTSTRAP_ERROR` if template is malformed
 - [ ] Unit tests in `backend/tests/unit/test_artifact_injector.py` cover:
   - SYNC template injection into a fresh story file
   - ENGAGE template injection
@@ -67,8 +70,26 @@ writes the blank template immediately after the prompt is generated.
   - Idempotency: second injection does not duplicate the block
   - Missing `## L3 Artifacts` section is created automatically
   - Existing `status=ready` block is NOT overwritten
+  - **G3 gate: injection blocked when predecessor artifact is missing/pending**
+  - **G2 gate: malformed template rejected before write**
 - [ ] `uv run pytest backend/tests/unit/test_artifact_injector.py -q` exits 0
 - [ ] `ruff check backend/app/services/pult.py` clean (after edits)
+
+## Edge Cases & Error Scenarios
+
+| Scenario | Expected Behaviour |
+|----------|-------------------|
+| Story file is read-only | `BOOTSTRAP_ERROR` with "permission denied" before attempting write |
+| `## L3 Artifacts` section exists but has malformed prior blocks | Append new block after last valid block; do not attempt to repair malformed blocks |
+| Template injection called for `phase=sync` on a story that already has `status=ready` SYNC artifact | Idempotent: no new block injected (existing ready block preserved) |
+| Cross-vault link in artifact points to non-existent vault | Log warning, write artifact with unresolved link, do not fail |
+| FLOW vault directory does not exist | Auto-create on first publish; fail with `INVALID_PATH` if unresolvable via `paths.py` |
+
+## Non-Functional Requirements
+
+- **Performance:** Injection must complete in <100ms per phase
+- **Concurrency:** Safe for concurrent injection on different story files (file-level locking not required, story-level isolation assumed)
+- **Observability:** Every injection attempt produces a log entry (success, idempotent skip, or failure)
 
 ## Template Definitions
 

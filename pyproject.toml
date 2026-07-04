@@ -13,5 +13,18 @@ dependencies = [
 [project.scripts]
 conductor = "conductor.__main__:main"
 
+[tool.setuptools.packages]
+find = {include = ["conductor", "conductor.*", "agentic", "agentic.*"]}
+
 [tool.uv]
 package = true
+
+[dependency-groups]
+dev = ["pytest>=8"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]

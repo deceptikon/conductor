@@ -249,6 +249,28 @@ def test_cmd_project_init_readme_at_project_root(tmp_path):
     assert "vault=adlai-vault" in root.read_text()
 
 
+def test_cmd_project_init_rerun_preserves_routing_and_readme(tmp_path):
+    """Re-running over an existing vault must NOT clobber the constitution or README."""
+    proj = tmp_path / "proj"
+    rvc_cli.cmd_project_init(str(proj), vault_name="adlai-vault", tree="newvault")
+    routing = proj / "adlai-vault" / "10_CONTEXT" / "ROUTING.md"
+    routing.write_text("type: root\n# THE CONSTITUTION\n")  # pretend it's real
+    readme = proj / "README.md"
+    readme.write_text("# Mine\n")
+    rvc_cli.cmd_project_init(str(proj), vault_name="adlai-vault", tree="newvault")
+    assert routing.read_text() == "type: root\n# THE CONSTITUTION\n", "ROUTING must be preserved"
+    assert readme.read_text() == "# Mine\n", "README must never be overwritten"
+
+
+def test_cmd_init_rerun_preserves_routing(tmp_path):
+    target = tmp_path / "vault"
+    rvc_cli.cmd_init(str(target), tree="newvault")
+    routing = target / "10_CONTEXT" / "ROUTING.md"
+    routing.write_text("# CONSTITUTION KEEP ME\n")
+    rvc_cli.cmd_init(str(target), tree="newvault")
+    assert routing.read_text() == "# CONSTITUTION KEEP ME\n"
+
+
 # ---------------------------------------------------------------------------
 #  rvc install (symlink bootstrap, STORY-105 follow-up)
 # ---------------------------------------------------------------------------

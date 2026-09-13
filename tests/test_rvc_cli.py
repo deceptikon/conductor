@@ -221,6 +221,100 @@ def test_cmd_init_creates_standard_layout(tmp_path):
 
 
 # ---------------------------------------------------------------------------
+#  STORY-105 — per-vault tree config (folder = state)
+# ---------------------------------------------------------------------------
+def _newvault(tmp_path: Path, name: str = "vault") -> Path:
+    """Scaffold a NEWVAULT-preset vault via `rvc init --tree newvault`."""
+    vault = tmp_path / name
+    subprocess.run(
+        [sys.executable, str(RVC_CLI), "init", str(vault), "--tree", "newvault"],
+        check=True, capture_output=True,
+    )
+    return vault
+
+
+def test_newvault_layout_and_tree_config(tmp_path):
+    """`--tree newvault` produces the NEWVAULT buckets + .rvc-root tree block."""
+    vault = _newvault(tmp_path)
+    for sub in (
+        "00_INBOX", "10_CONTEXT", "20_NEXT", "30_ACTIVE", "40_DECIDE",
+        "50_DEFERRED", "60_DONE", "90_ARCHIVE/done", "90_ARCHIVE/superseded",
+    ):
+        assert (vault / sub).is_dir(), f"missing {sub}"
+    cfg = (vault / ".rvc-root").read_text()
+    assert "tree.triage=20_NEXT" in cfg
+    assert "tree.evict=90_ARCHIVE/done" in cfg
+    assert "tree.supersede=90_ARCHIVE/superseded" in cfg
+
+
+def test_newvault_create_lands_in_next_no_status_frontmatter(tmp_path):
+    vault = _newvault(tmp_path)
+    path = rvc_cli.cmd_create_issue(str(vault), "New bucket story", prefix="STORY")
+    rel = str(Path(path).relative_to(vault))
+    assert rel.startswith("20_NEXT/")
+    content = Path(path).read_text()
+    assert "status:" not in content, "folder = state: status frontmatter is forbidden"
+    assert "type: story" in content
+
+
+def test_newvault_start_moves_to_active_content_untouched(tmp_path):
+    vault = _newvault(tmp_path)
+    path = Path(rvc_cli.cmd_create_issue(str(vault), "Flow story", prefix="STORY"))
+    before = path.read_text()
+    rvc_cli.cmd_issue_action(str(vault), "STORY-01", "start")
+    new = vault / "30_ACTIVE" / path.name
+    assert new.exists(), "issue must land in 30_ACTIVE"
+    assert not path.exists(), "source file must be gone (git-mv/rename, no copy)"
+    assert new.read_text() == before, "content must be byte-identical — folder is the state"
+
+
+def test_newvault_verbs_resolve_buckets(tmp_path):
+    vault = _newvault(tmp_path)
+    rvc_cli.cmd_create_issue(str(vault), "Decide me", prefix="STORY")
+    rvc_cli.cmd_issue_action(str(vault), "STORY-01", "block")
+    assert (vault / "40_DECIDE" / "STORY-01-Decide-me.md").exists()
+    rvc_cli.cmd_issue_action(str(vault), "STORY-01", "evict")
+    assert (vault / "90_ARCHIVE" / "done" / "STORY-01-Decide-me.md").exists()
+    assert not (vault / "40_DECIDE" / "STORY-01-Decide-me.md").exists()
+
+
+def test_newvault_list_resolves_status_aliases_for_mcp(tmp_path, capsys):
+    """MCP contract: `rvc_list(status="To Do")` must resolve onto 20_NEXT."""
+    vault = _newvault(tmp_path)
+    rvc_cli.cmd_create_issue(str(vault), "A", prefix="STORY")
+    rvc_cli.cmd_create_issue(str(vault), "B", prefix="STORY")
+    rvc_cli.cmd_issue_list(str(vault), "To Do")
+    out = capsys.readouterr().out
+    assert "STORY-01" in out and "STORY-02" in out
+    assert "[20_NEXT]" in out
+    rvc_cli.cmd_issue_list(str(vault), "Active")
+    assert "No issues" in capsys.readouterr().out  # nothing started yet
+
+
+def test_backstop_rejects_unknown_action_dir_and_status(tmp_path):
+    vault = _newvault(tmp_path)
+    rvc_cli.cmd_create_issue(str(vault), "X", prefix="STORY")
+    with pytest.raises(SystemExit):
+        rvc_cli.cmd_issue_action(str(vault), "STORY-01", "meltdown")
+    with pytest.raises(SystemExit):
+        rvc_cli.cmd_issue_list(str(vault), "SomethingElse")
+    with pytest.raises(SystemExit):
+        rvc_cli.cmd_issue_list(str(vault), list_dir="77_BOGUS")
+
+
+def test_legacy_init_still_produces_legacy_layout(tmp_path):
+    legacy = tmp_path / "legacy"
+    subprocess.run(
+        [sys.executable, str(RVC_CLI), "init", str(legacy), "--tree", "legacy"],
+        check=True, capture_output=True,
+    )
+    for sub in ("00_Project", "10_Issues/01_To_Do", "10_Issues/04_Done", "99_Archive"):
+        assert (legacy / sub).is_dir(), f"missing {sub}"
+    assert not (legacy / "20_NEXT").exists()
+    assert "tree." not in (legacy / ".rvc-root").read_text()
+
+
+# ---------------------------------------------------------------------------
 #  cmd_git_commit_all (submodule-aware commit)
 #  Uses a real temp git repo to verify the flow end-to-end.
 # ---------------------------------------------------------------------------

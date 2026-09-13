@@ -4,7 +4,8 @@ Runs against a temp vault fixture so tests are hermetic.
 
 GREEN tests exercise existing `rvc-cli.py` functions:
   find_vault_root, build_vault_index, find_file_by_id, cmd_get, cmd_context,
-  cmd_issue_list, cmd_create_issue, cmd_search, cmd_init.
+  cmd_issue_list, cmd_create_issue, cmd_search, cmd_init, cmd_project_init,
+  cmd_install, _write_project_readme.
 
 RED tests pin boundary/contract issues flagged in the RVC audit
 (REVIEW_AND_PLAN.md): shell=True in `run_cmd`, race conditions in `_next_id`,
@@ -199,25 +200,86 @@ def test_cmd_search_no_results(tmp_vault, capsys):
 # ---------------------------------------------------------------------------
 #  cmd_init
 # ---------------------------------------------------------------------------
-@pytest.mark.xfail(reason="RED: cmd_init is inline in main(), not extractable (STORY-013)", strict=True)
 def test_cmd_init_creates_standard_layout(tmp_path):
-    """STORY-013: `rvc init` should be a module-level cmd_init helper, not
-    inline logic buried in main(). Currently the init logic lives only in
-    argparse — this test pins the target refactor."""
+    """STORY-013/105: init logic lives in the module-level `cmd_init` helper."""
     target = tmp_path / "fresh"
     target.mkdir()
-    try:
-        rvc_cli.cmd_init(str(target))
-    except AttributeError:
-        pytest.fail(
-            "RED: `cmd_init` is not a callable function in rvc-cli.py. "
-            "Extract the init logic from main() (STORY-013)."
-        )
+    rvc_cli.cmd_init(str(target))
     for expected in (
         "00_Project", "10_Issues/01_To_Do", "10_Issues/02_Active",
         "10_Issues/03_Review", "10_Issues/04_Done", "20_Specs", ".rvc-root",
     ):
         assert (target / expected).exists(), f"missing {expected}"
+
+
+def test_cmd_init_readme_newvault(tmp_path):
+    """`cmd_init` writes a README at the vault root with the constitution pointer."""
+    rvc_cli.cmd_init(str(tmp_path / "proj"), tree="newvault")
+    readme = tmp_path / "proj" / "README.md"
+    assert readme.exists()
+    text = readme.read_text()
+    assert "10_CONTEXT/ROUTING.md" in text
+    assert "folder" in text and "git mv" in text
+    assert "{" not in text, "README placeholders must be substituted"
+
+
+def test_cmd_init_readme_legacy_points_to_reglament(tmp_path):
+    rvc_cli.cmd_init(str(tmp_path / "leg"), tree="legacy")
+    text = (tmp_path / "leg" / "README.md").read_text()
+    assert "00_Project/REGLAMENT.md" in text
+
+
+def test_cmd_init_does_not_clobber_existing_readme(tmp_path):
+    target = tmp_path / "proj"
+    target.mkdir()
+    (target / "README.md").write_text("# Mine")
+    rvc_cli.cmd_init(str(target), tree="newvault")
+    assert (target / "README.md").read_text() == "# Mine"
+
+
+def test_cmd_project_init_readme_at_project_root(tmp_path):
+    rvc_cli.cmd_project_init(str(tmp_path / "proj"), vault_name="adlai-vault", tree="newvault")
+    readme = tmp_path / "proj" / "README.md"
+    assert readme.exists()
+    text = readme.read_text()
+    assert "at `adlai-vault/`" in text
+    assert "10_CONTEXT/ROUTING.md" in text
+    root = tmp_path / "proj" / "adlai-vault" / ".rvc-root"
+    assert root.exists()
+    assert "vault=adlai-vault" in root.read_text()
+
+
+# ---------------------------------------------------------------------------
+#  rvc install (symlink bootstrap, STORY-105 follow-up)
+# ---------------------------------------------------------------------------
+def test_cmd_install_creates_symlink(tmp_path):
+    rc = rvc_cli.cmd_install(str(tmp_path), force=True)
+    target = tmp_path / "rvc"
+    assert rc == 0
+    assert target.is_symlink()
+    assert os.path.realpath(target) == os.path.realpath(RVC_CLI)
+
+
+def test_cmd_install_is_idempotent(tmp_path):
+    rvc_cli.cmd_install(str(tmp_path), force=True)
+    assert rvc_cli.cmd_install(str(tmp_path), force=True) == 0
+
+
+def test_cmd_install_check_reports_ok(tmp_path, capsys):
+    rvc_cli.cmd_install(str(tmp_path), force=True)
+    assert rvc_cli.cmd_install(str(tmp_path), check=True) == 0
+    assert "OK" in capsys.readouterr().out
+
+
+def test_cmd_install_refuses_conflict_without_force(tmp_path, capsys):
+    target = tmp_path / "rvc"
+    target.write_text("# not a symlink")
+    rc = rvc_cli.cmd_install(str(tmp_path))
+    assert rc == 1
+    assert "Refusing" in capsys.readouterr().err
+    assert target.read_text() == "# not a symlink", "must not clobber without --force"
+    assert rvc_cli.cmd_install(str(tmp_path), force=True) == 0
+    assert target.is_symlink(), "--force replaces the conflicting file"
 
 
 # ---------------------------------------------------------------------------
